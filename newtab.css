@@ -1,0 +1,611 @@
+/* Theme variables in themes.mjs, other variables in config-engine.mjs */
+
+/* Toggled via classList on documentElement from setConfig('hide_scrollbar') */
+html.no-scrollbar {
+	scrollbar-width: none;
+}
+body {
+	width: 100vw;
+	margin-inline: auto;
+	overflow-x: hidden;
+	overflow-y: scroll;
+	font-family: sans-serif;
+	font-size: 70%;
+	line-height: 1;
+	text-rendering: optimizeSpeed;
+	font-synthesis: none;
+}
+
+
+#main {
+	width: 80%;
+	margin: 5% auto 0;
+	position: relative;
+	max-width: 100%;
+	font-size: 1.6em;
+	white-space: nowrap;
+	user-select: none;
+	touch-action: manipulation;
+}
+#main ul, .menu {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+#main ul {
+	display: flex;
+	flex-direction: column;
+}
+#main li {
+	margin-left: 0.7em;
+}
+#main a + div {
+	padding-left: 1.1em;
+	display: grid;
+	grid-template-rows: 1fr;
+}
+#main a + div>ul {
+	min-height: 0;
+}
+#main a {
+	box-sizing: border-box;
+	max-width: 100%;
+	display: inline-block;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	font-size: inherit;
+	text-decoration: none;
+	cursor: pointer;
+	transition-property: color, background-color, box-shadow, opacity;
+	transition-timing-function: ease-out;
+}
+
+.wrap {
+	transition: grid-template-rows 0.2s ease-out, opacity 0.2s ease-out;
+}
+.column {
+	display: inline-block;
+	vertical-align: top;
+	box-sizing: border-box;
+	padding: 0 1em 0 0;
+	min-height: 30em;
+	contain: layout style;
+	isolation: isolate;
+	width: calc(100% / var(--columns, 1));
+}
+.column>ul>li, .column div>ul>li {
+	contain: inline-size layout style;
+}
+#main .empty {
+	opacity: 0.5;
+}
+.dragstart {
+	opacity: 0.5;
+}
+.drop-overlay {
+	position: fixed;
+	pointer-events: none;
+	background: var(--text-label);
+	z-index: 100;
+	opacity: 0;
+	transition: opacity 80ms linear;
+}
+.drop-overlay-merge {
+	background: transparent;
+}
+.drop-overlay-nest {
+	outline: 2px dashed var(--text-bright);
+}
+
+
+#main .column a::before {
+	content: '';
+	display: inline-block;
+	width: 1.4em;
+	aspect-ratio: 1;
+	margin: -0.3em 0.4em 0 0;
+	background-size: 100% 100%;
+	vertical-align: middle;
+	pointer-events: none;
+}
+#main .column a:not([href])::before {
+	mask-repeat: no-repeat;
+	mask-position: center;
+}
+.folder::before {
+	mask-image: url('icons/folder.svg');
+}
+.open::before {
+	mask-image: url('icons/folder_open.svg');
+}
+#main .empty::before {
+	display: none !important;
+}
+.recent::before {
+	mask-image: url('icons/recent.svg');
+}
+.top::before {
+	mask-image: url('icons/top.svg');
+}
+.closed::before {
+	mask-image: url('icons/closed.svg');
+}
+.windows::before {
+	mask-image: url('icons/windows.svg');
+}
+/* Closed window rows carry no URL, so they have no favicon to paint */
+.window::before {
+	mask-image: url('icons/window.svg');
+}
+/* URL favicons via --favicon. page.svg mask is the neutral placeholder while unset. .favicon-privileged and .favicon-error override to their placeholders */
+#main .column a[href]::before {
+	background-image: var(--favicon, none);
+	mask: var(--favicon, url('icons/page.svg')) no-repeat center / 100% 100%;
+}
+#main .column a[href].favicon-privileged::before {
+	background-image: none;
+	mask: url('icons/page_privileged.svg') no-repeat center / 100% 100%;
+}
+#main .column a[href].favicon-error::before {
+	background-image: none;
+	mask: url('icons/page_error.svg') no-repeat center / 100% 100%;
+}
+/* Real favicons paint unmasked with a transparent backing: the mask would clip SVG/PNG transparency to the text color, and mask-image blocks cross-origin chrome:// loads */
+#main .column a[href].favicon-unmasked::before {
+	mask: none;
+	background-color: transparent;
+}
+/* Luma-conflict: the icon is near-backdrop, invert lifts contrast while hue-rotate approximates hue restoration. Only set on data-URI favicons (tainted https pixels are unreadable) */
+#main .column a[href].favicon-unmasked.favicon-conflict::before {
+	filter: invert(1) hue-rotate(180deg);
+}
+
+
+.menu {
+	position: absolute;
+	white-space: nowrap;
+	font-size: 1.2em;
+	line-height: 2;
+	background-color: var(--bg);
+	color: var(--text-bright);
+	border: solid 1px var(--border);
+	border-radius: 3px;
+	box-shadow: 0 1px 10px var(--border-shadow);
+	clip-path: inset(0 -20px -20px 0);
+	opacity: 0;
+	scale: 0.8;
+	pointer-events: none;
+	transition-property: opacity, scale;
+	transition-timing-function: ease-out;
+	transform-origin: top left;
+	z-index: 300;
+}
+.menu.open {
+	opacity: 1;
+	scale: 1;
+	pointer-events: auto;
+}
+.menu a {
+	display: block;
+	color: var(--text-bright);
+	padding: 0 2em;
+	cursor: default;
+}
+.menu a:hover {
+	background-color: var(--bg-hover);
+	outline: solid 1px var(--border-hover);
+	position: relative;
+}
+.menu li:first-child a {
+	border-top-left-radius: 3px;
+	border-top-right-radius: 3px;
+}
+.menu li:last-child a {
+	border-bottom-left-radius: 3px;
+	border-bottom-right-radius: 3px;
+}
+.menu hr {
+	margin: 0;
+	border: solid var(--border);
+	border-width: 1px 0 0;
+}
+
+
+#options, #options_button {
+	position: absolute;
+}
+#options {
+	display: none;
+	font-size: 1.4em;
+	color: var(--text-bright);
+	border: solid var(--border);
+	border-width: 0 0 1px 1px;
+	box-shadow: 0 2px 10px var(--border-shadow);
+	--nav-width: 9em;
+	width: 29em;
+	top: 1px;
+	right: 1px;
+	border-bottom-left-radius: 8px;
+	background-color: var(--bg-alt);
+}
+#options_nav {
+	position: absolute;
+	width: var(--nav-width);
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	border-right: solid 1px var(--border);
+	height: 100%;
+}
+#options_nav a {
+	display: block;
+	padding: 1em 0 1em 1em;
+	color: var(--text);
+	border: solid transparent;
+	border-width: 1px 0;
+	cursor: pointer;
+}
+#options_nav a:hover {
+	background-color: var(--bg-hover);
+	outline: solid thin var(--border-hover);
+}
+#options_nav a.current {
+	color: var(--text-bright);
+	background-color: var(--bg);
+	border-color: var(--border);
+	margin-right: -1px;
+	outline: none;
+}
+#options .section {
+	margin-left: var(--nav-width);
+	margin-top: -1px;
+	padding: 1px 0;
+	background-color: var(--bg);
+	display: none;
+	min-height: 25em;
+}
+#options .section.current {
+	display: block;
+}
+#options_button {
+	background-size: 100% 100%;
+	width: 2.4em;
+	height: 2.4em;
+	cursor: pointer;
+	top: 0;
+	right: 0;
+	background-color: var(--text-bright);
+	mask: url('icons/options.svg') no-repeat center / 1.7em;
+	opacity: 0.6;
+}
+#options_button:hover,
+#options_button:focus-visible {
+	opacity: 0.9;
+}
+#options_close_button {
+	color: var(--text-bright);
+	text-align: center;
+	font-size: 1.6em;
+	position: absolute;
+	right: 0;
+	display: block;
+	width: 1em;
+	height: 1em;
+	line-height: 1em;
+	cursor: pointer;
+	opacity: 0.8;
+	border-radius: 5px;
+}
+#options_close_button:hover {
+	opacity: 1;
+	box-shadow: 0 0 1px;
+}
+
+
+legend {
+	color: var(--text);
+	grid-column: 1 / -1;
+	cursor: default;
+}
+/* Grid pairs each label with its sibling .revert arrow (initConfig inserts revert after the label, not inside it) */
+fieldset, #options_show_bookmarks {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	align-items: start;
+	column-gap: 0.2em;
+}
+/* Nested grid (dynamic bookmark-folder checkboxes inside the Content fieldset) must span the parent */
+#options_show_bookmarks {
+	grid-column: 1 / -1;
+}
+fieldset {
+	border: none;
+	margin: 2em 0.5em 1em;
+	padding: 0.5em 0 0;
+}
+label {
+	display: block;
+	font-size: 0.85em;
+	text-align: right;
+	clear: left;
+	margin: 0 0 0.1em 0.8em;
+	padding-left: 0.2em;
+	border-radius: 5px;
+}
+label span {
+	float: left;
+	text-align: left;
+	line-height: 1.9;
+	color: var(--text-label);
+}
+label:has(input[type='checkbox']:hover) {
+	box-shadow: 0 0 4px -1px var(--text-bright);
+}
+label.range-label {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	text-align: left;
+}
+label.range-label>span {
+	order: 1;
+	margin-right: auto;
+}
+/* Unit suffix, ordered between the number box and the slider. Must stay after the rule above */
+label span.unit {
+	order: 3;
+	margin: 0 0.5em 0 0;
+	width: 1.4em;
+	z-index: 1;
+	text-align: end;
+}
+/* Value caption beside the label, before the number box. Must stay after label.range-label>span, which it ties on specificity */
+label span.range-value {
+	order: 1;
+	margin: 0 1.7em 0 0;
+}
+label:has(span.unit) .range-number {
+	width: 4.7em;
+	margin: 0 -1.7em 0 0;
+}
+label.range-label .range-number {
+	order: 2;
+	margin: 0 0.2em 0 0;
+}
+label.range-label>input[type='range'] {
+	order: 4;
+	border: none;
+}
+input, select, textarea {
+	width: 9em;
+	margin: 0 0.2em 0 0;
+	box-sizing: border-box;
+	vertical-align: middle;
+	border: 1px solid var(--input-border);
+	font: inherit;
+	border-radius: 3px;
+}
+input, select {
+	color: var(--text-bright);
+	background-color: var(--bg-grey);
+}
+input[type='number']:focus, input[type='text']:focus, textarea:focus {
+	outline-style: solid;
+}
+input[type='number']:hover, input[type='text']:hover, select:hover, textarea:hover {
+	box-shadow: 0 0 4px -1px var(--text-bright);
+}
+select {
+	vertical-align: mathematical;
+}
+select:focus {
+	outline: 1px solid;
+}
+#options_newtab {
+	width: min-content;
+	field-sizing: content;
+}
+textarea {
+	width: 100%;
+	height: 16em;
+	font-size: 1.15em;
+	font-family: monospace;
+	vertical-align: top;
+	float: left;
+	line-height: 1.1em;
+	color: var(--text-label);
+	background-color: var(--bg-alt);
+}
+input.color {
+	width: 6em;
+	font-size: 1.23em;
+	font-family: monospace;
+}
+input[type='checkbox'] {
+	width: 1.3em;
+	height: 1.3em;
+	position: relative;
+	top: 0.3em;
+}
+input[type='color'] {
+	width: 3em;
+	height: 2.1em;
+	margin: 0;
+	padding: 0;
+	cursor: pointer;
+	border-radius: 8px;
+	position: relative;
+}
+input[type='color']::-moz-color-swatch {
+	border: 0;
+}
+input[type='color']:hover {
+	outline: 1px solid var(--text);
+}
+input[type='color']:open {
+	z-index: 200;
+	border: 2px solid var(--bg);
+	outline: 2px solid;
+	box-shadow: 0 0 0 3px var(--bg);
+}
+input.range-number {
+	width: 4em;
+	appearance: textfield;
+}
+.subopt {
+	margin: 0 0 0 3em;
+}
+.subopt input {
+	width: 4em;
+	vertical-align: mathematical;
+}
+label:has(>input:disabled) {
+	opacity: 0.5;
+}
+#options_background_image_file {
+	width: 100%;
+	margin: 0.3em 0;
+}
+.file-status {
+	margin-left: 0.5em;
+	width: 19em;
+	overflow-wrap: anywhere;
+}
+input#options_font, input#options_font_size {
+	vertical-align: mathematical;
+}
+
+
+input[type='range'] {
+	width: 100%;
+	background: transparent;
+	height: 1.5em;
+	padding-bottom: 0.5em;
+}
+input[type='range']::-moz-range-progress {
+	height: 0.3em;
+	background: var(--range-progress);
+	border-radius: 9em 0 0 9em;
+	border: 0.07em solid var(--range-progress-border);
+}
+input[type='range']:hover::-moz-range-progress {
+	background: var(--range-progress-hover);
+	border-color: var(--range-progress-border-hover);
+}
+input[type='range']::-moz-range-track {
+	height: 0.3em;
+	background: var(--range-track);
+	border-radius: 9em;
+	border: 0.07em solid var(--range-track-border);
+}
+input[type='range']:hover::-moz-range-track {
+	background: var(--range-track-hover);
+	border-color: var(--range-track-border-hover);
+}
+input[type='range']::-moz-range-thumb {
+	width: 1.2em;
+	height: 1.2em;
+	border-radius: 50%;
+	background: var(--range-thumb);
+	border: 0.15em solid var(--range-thumb-border);
+	box-shadow: var(--range-thumb-shadow);
+}
+input[type='range']:hover::-moz-range-thumb {
+	background: var(--range-thumb-hover);
+	box-shadow: var(--range-thumb-shadow-hover);
+}
+input[type='range']:active::-moz-range-thumb {
+	background: var(--range-thumb-active);
+	border-color: #fff;
+}
+
+
+.revert {
+	align-self: center;
+	width: 1.4em;
+	height: 1.2em;
+	background-color: var(--text-bright);
+	opacity: 0.7;
+	mask: url('icons/revert.svg') no-repeat center / 100% 100%;
+	cursor: pointer;
+	margin: -0.1em -0.3em 0 0;
+	position: relative;
+}
+.revert:hover, .revert:focus-visible {
+	opacity: 1;
+}
+
+
+#toast {
+	position: fixed;
+	left: 50%;
+	bottom: 2em;
+	transform: translateX(-50%) translateY(1em);
+	white-space: pre-wrap;
+	padding: 0.8em 1.4em;
+	background-color: var(--bg-hover);
+	color: var(--text-bright);
+	font-size: 1.5em;
+	line-height: 1.4;
+	text-align: center;
+	box-shadow: 0 2px 8px rgb(255 0 0 / 40%);
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+	z-index: 110;
+}
+#toast.show {
+	opacity: 1;
+	pointer-events: auto;
+	transform: translateX(-50%) translateY(0);
+}
+#toast .toast-detail {
+	font-size: 0.8em;
+	opacity: 0.8;
+	margin-top: 0.3em;
+}
+
+
+.cache-error {
+	box-sizing: border-box;
+	width: 80%;
+	max-width: 60em;
+	font-size: 1.6em;
+	color: var(--text);
+	padding: 2em;
+	margin: 5% auto 0;
+	white-space: normal;
+	user-select: text;
+}
+.cache-error .storage-recovery-link {
+	color: var(--link);
+	text-decoration: none;
+}
+.cache-error .storage-recovery-link:hover {
+	text-decoration: underline;
+}
+.storage-full-error button {
+	font: inherit;
+	color: var(--text-label);
+	background: var(--bg-grey);
+	border: 2px solid var(--border);
+	border-radius: 0.3em;
+	padding: 0.4em 0.8em;
+	cursor: pointer;
+}
+.storage-full-error button:hover {
+	color: var(--text-bright);
+	background: var(--bg-hover);
+	border-color: var(--border-hover);
+	box-shadow: 0 0 8px rgb(255 0 0 / 50%);
+}
+.cache-error h1 {
+	color: #c00;
+}
+.cache-error ul {
+	margin: 1em 0;
+	padding-left: 2em;
+}
+.cache-error li {
+	margin: 0.5em 0;
+}

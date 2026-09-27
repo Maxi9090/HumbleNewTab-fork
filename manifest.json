@@ -1,0 +1,37 @@
+{
+	"name": "HumbleNewTab-fork",
+	"version": "1.47.15",
+	"manifest_version": 3,
+	"description": "Redesigned new tab page featuring your bookmarks, most visited, and recently closed in a custom layout.",
+	"icons": {
+		"64": "icons/logo.svg"
+	},
+	"browser_specific_settings": {
+		"gecko": {
+			"id": "HumbleNewTab-fork@addon",
+			"strict_min_version": "140.0",
+			"data_collection_permissions": {
+				"required": ["none"]
+			}
+		}
+	},
+	"permissions": ["bookmarks", "tabs"],
+	"optional_permissions": ["sessions", "topSites"],
+	"background": {
+		"scripts": ["js-src/background.mjs"],
+		"type": "module"
+	},
+	"chrome_url_overrides": {
+		"newtab": "newtab.html"
+	},
+	"options_ui": {
+		"page": "newtab.html?options",
+		"open_in_tab": true
+	},
+	"homepage_url": "https://github.com/Maxi9090/HumbleNewTab-fork",
+	"commands": {
+		"focus-newtab": {
+			"description": "Navigate to latest new tab"
+		}
+	}
+}

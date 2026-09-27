@@ -1,0 +1,9 @@
+{
+	"scripts": {
+		"build-for-amo": "node build.mjs"
+	},
+	"devDependencies": {
+		"esbuild": "^0.28.2",
+		"lightningcss": "^1.33.0"
+	}
+}
