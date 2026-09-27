@@ -1,4 +1,4 @@
-<h2><img align='center' src='https://raw.githubusercontent.com/Maxi9090/HumbleNewTab-fork/main/icons/logo.svg' style='height:35px;'> HumbleNewTab-fork</h2>
+<h2><img src='https://github.com/Maxi9090/HumbleNewTab-fork/raw/refs/heads/main/icons/logo.svg' style='height:35px;'> HumbleNewTab-fork</h2>
 
 A Firefox-only fork of [Humble New Tab Page](https://github.com/ibillingsley/HumbleNewTabPage) focused on instant loading, local-only favicons, and quality of life improvements. Same layout, fully offline, completely rewritten internals.
 
