@@ -147,7 +147,7 @@ const SpecialFolders = {
 		top: {title: 'Most visited', configKey: 'number_top', max: 50},
 		recent: {title: 'Recent bookmarks', configKey: 'number_recent', max: 50},
 		closed: {title: 'Recently closed tabs', configKey: 'number_closed', max: 25},
-		windows: {title: 'Recently closed windows', configKey: 'number_windows', max: 25},
+		windows: {title: 'Recently closed windows', configKey: 'number_windows', max: 5},
 	},
 
 	all: ['top', 'recent', 'closed', 'windows'],
@@ -159,7 +159,7 @@ const SpecialFolders = {
 	async fetchChildrenOfSpecialFolder(id) {
 		const def = this.defs[id];
 		const raw = Number(getConfig(def.configKey));
-		const limit = raw > 0 ? Math.min(raw, def.max) : 15;
+		const limit = raw > 0 ? Math.min(raw, def.max) : Math.min(15, def.max);
 
 		if (id === 'closed' || id === 'windows') return this._fetchClosedSessions(id, limit);
 		if (id === 'top') return this._fetchTopSites(limit);
@@ -190,7 +190,8 @@ const SpecialFolders = {
 		const cached = readSpecialFolderCache(kind, limit);
 		if (cached) return this._hydrateClosed(cached);
 		try {
-			const sessions = await browser.sessions.getRecentlyClosed({maxResults: Math.min(limit, 25)});
+			// Omitting maxResults returns the full pool: the explicit combined-list cap strands windows behind newer tabs
+			const sessions = await browser.sessions.getRecentlyClosed({});
 			const list = [];
 			for (let i = 0, len = sessions.length; i < len; i++) {
 				const raw = sessions[i];
@@ -198,8 +199,9 @@ const SpecialFolders = {
 				if (kind === 'windows' ? !raw.window : !raw.tab) continue;
 				list.push(BookmarkCache.shapeClosedSession(raw));
 			}
-			writeSpecialFolderCache(kind, limit, list);
-			return this._hydrateClosed(list);
+			const shown = list.slice(0, limit);
+			writeSpecialFolderCache(kind, limit, shown);
+			return this._hydrateClosed(shown);
 		} catch (error) {
 			console.warn('[SpecialFolders] sessions fetch failed:', error);
 			// The background may have written the record while this fetch was in flight

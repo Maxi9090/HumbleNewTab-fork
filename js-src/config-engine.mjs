@@ -20,7 +20,7 @@ const config = {
 	number_closed: 15,
 	number_top: 15,
 	number_recent: 15,
-	number_windows: 15,
+	number_windows: 5,
 
 	font_color: null,
 	font: 'sans-serif',

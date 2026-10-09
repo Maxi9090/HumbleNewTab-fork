@@ -136,19 +136,24 @@ async function performBookmarkSync(reason, options = {}) {
 
 let lastSessionsSignature = null;
 
+// Firefox holds at most 5 closed windows, so only the tabs record keeps the 25-entry cap
+const CLOSED_RECORD_LIMITS = {closed: {max: 25, fallback: 15}, windows: {max: 5, fallback: 5}};
+
 // The page paints these records directly, so the background owns them. Skip a record while its folder is disabled
 function writeClosedRecord(id, data) {
 	const show = localStorage.getItem(`options.show_${id}`);
 	if (show == null || Number(show) === 0) return;
+	const {max, fallback} = CLOSED_RECORD_LIMITS[id];
 	const raw = Number(localStorage.getItem(`options.number_${id}`));
-	const limit = raw > 0 ? Math.min(raw, 25) : 15;
+	const limit = raw > 0 ? Math.min(raw, max) : fallback;
 	BookmarkCache.safeSetItem(`cache.${id}`, JSON.stringify({limit, data: data.slice(0, limit)}));
 }
 
 async function syncClosedTabs(force = false) {
 	if (!(await hasSessionsPermission())) return;
 	try {
-		const sessions = await browser.sessions.getRecentlyClosed({maxResults: 25});
+		// Omitting maxResults returns the full closed pool: the explicit cap strands windows behind newer tabs
+		const sessions = await browser.sessions.getRecentlyClosed({});
 		const closed = [];
 		const windows = [];
 		const forgets = [];
