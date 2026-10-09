@@ -150,21 +150,10 @@ const BookmarkCache = {
 	async captureFaviconResult(source, img) {
 		const srcId = await this.digestString(source);
 		if (this.isVectorSource(source)) {
-			// Vectors stay vector: no raster, no luma conflict signal, row key equals the source token
-			return {dataUrl: source, hash: srcId, srcId, lumaClass: null};
+			// Vectors stay vector. Only data-URI SVGs are readable, so only they can carry a conflict signal
+			return {dataUrl: source, hash: srcId, srcId, lumaClass: this.classifyDataUriSvg(source, img)};
 		}
-		const canvas = document.createElement('canvas');
-		const w = img.naturalWidth || 16;
-		const h = img.naturalHeight || 16;
-		// Scale down to 64 for storage. Favicons never need more, and the identity is computed before encoding
-		const scale = Math.min(1, 64 / Math.max(w, h));
-		const dw = Math.max(1, Math.round(w * scale));
-		const dh = Math.max(1, Math.round(h * scale));
-		canvas.width = dw;
-		canvas.height = dh;
-		const ctx = canvas.getContext('2d');
-		ctx.drawImage(img, 0, 0, dw, dh);
-		const pixels = ctx.getImageData(0, 0, dw, dh).data;
+		const {canvas, pixels} = this._rasterize(img);
 		const lumaClass = this.faviconClassFromPixels(pixels);
 		// The digest is over the captured pixels, not the stored bytes, so the identity survives format conversion
 		const hash = await this.digestToHex(pixels);
@@ -173,6 +162,33 @@ const BookmarkCache = {
 		const png = canvas.toDataURL('image/png');
 		const image = webp && webp.length <= png.length ? webp : png;
 		return {dataUrl: image, hash, srcId, lumaClass};
+	},
+
+	// Data-URI SVGs render in-process without tainting, so a raster copy can classify them. https SVGs stay unreadable
+	classifyDataUriSvg(source, img) {
+		if (!SVG_DATA_RE.test(source)) return null;
+		try {
+			return this.faviconClassFromPixels(this._rasterize(img).pixels);
+		} catch {
+			// A failed raster readback leaves the vector unclassified
+			return null;
+		}
+	},
+
+	// Draw the loaded image scaled into a canvas and read its pixels. Canvas access can throw on taint
+	_rasterize(img) {
+		const canvas = document.createElement('canvas');
+		const w = img.naturalWidth || 16;
+		const h = img.naturalHeight || 16;
+		// Scale down to 64 at most: favicons don't need more and nothing is ever upscaled
+		const scale = Math.min(1, 64 / Math.max(w, h));
+		const dw = Math.max(1, Math.round(w * scale));
+		const dh = Math.max(1, Math.round(h * scale));
+		canvas.width = dw;
+		canvas.height = dh;
+		const ctx = canvas.getContext('2d');
+		ctx.drawImage(img, 0, 0, dw, dh);
+		return {canvas, pixels: ctx.getImageData(0, 0, dw, dh).data};
 	},
 
 	// Classify only near-monochrome icons to avoid false contrast conflicts
