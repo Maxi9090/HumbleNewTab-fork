@@ -1,4 +1,4 @@
-<h2><img src='https://github.com/Maxi9090/HumbleNewTab-fork/raw/refs/heads/main/icons/logo.svg' style='height:35px;'> HumbleNewTab-fork</h2>
+<h2><img src='https://github.com/Maxi9090/HumbleNewTab-fork/raw/refs/heads/main/icons/logo.svg' height='30' alt=''> Humble New Tab - fork</h2>
 
 A Firefox-only fork of [Humble New Tab Page](https://github.com/ibillingsley/HumbleNewTabPage) focused on instant loading, local-only favicons, and quality of life improvements. Same layout, fully offline, completely rewritten internals.
 
@@ -6,7 +6,8 @@ Requires Firefox 140 or later.
 
 ## How it differs
 
-- **Speed.** The original was built for Chrome, where extension API calls are cheap. On Firefox, those same calls cross a process boundary, so every new tab waited on a long chain of API round-trips with a sustained CPU spike while the page assembled itself from scratch. This fork adds a background page and moves that work there, so the page renders from data that is already available:
+- **Speed.** The original was built for Chrome, where extension API calls are cheap. On Firefox, those same calls cross a process boundary, so every new tab waited on a long chain of API round-trips with a sustained CPU spike while the page assembled itself from scratch. This fork:
+  - adds a background page and moves that work there, so the page renders from data that is already available.
   - reads the full bookmark tree once, keeps it up to date in the background, and renders from a stored copy, so opening a new tab does no bookmark API call at all and is effectively instant (the original read the tree on every load, and called the bookmarks API again the first time you opened a folder).
   - does no capture or fetch for the icons it already has stored, so a new tab renders them immediately (the original pointed every row at a provider URL, so icons came from the network on every load).
   - caches "Most visited", "Recent bookmarks", "Recently closed tabs", and "Recently closed windows", so they appear instantly (the original called the matching browser API each time those folders rendered).
@@ -15,7 +16,8 @@ Requires Firefox 140 or later.
   - skips work that would change nothing: it writes only when the stored content changed, and re-renders only when the bookmark tree changed.
   - loads the options panel and the drag and drop code only when used.
   - has many more smaller performance improvements that together add up.
-- **Favicons.** The original sets each favicon domain to its `.ico` path, or fetches favicons from third-party providers (DuckDuckGo, Ecosia, Google, Icon Horse, Yandex). All of these options are unreliable, and the providers send your bookmarked domains to those services. This fork never contacts the internet for favicons. Instead it:
+- **Favicons.** The original sets each favicon domain to its `.ico` path, or fetches favicons from third-party providers (DuckDuckGo, Ecosia, Google, Icon Horse, Yandex). All of these options are unreliable, and the providers send your bookmarked domains to those services. This fork:
+  - never contacts the internet for favicons.
   - reads favicons only from your open tabs.
   - captures favicons fully in the background. Opening a bookmarked site in any way is enough to get its favicon, and the extension's new tab page does not need to be open.
   - stores favicons locally so they survive restarts and are already there on the next new tab.
@@ -28,7 +30,7 @@ Requires Firefox 140 or later.
   - Every setting applies as you change it: sliders while you drag them, colors, checkboxes, number inputs, and text fields as you edit them.
   - The theme can follow your browser's light or dark preference in real-time.
   - "Recently closed tabs" and "Recently closed windows" update as you close tabs or windows, as you restore an entry from them, and as you remove entries in Firefox View.
-- **Improved drag and drop UX:**
+- **Drag and drop UX:**
   - Made harder to move unintentionally thanks to small drop zones and spatial thresholds.
   - All areas you can actually move to are dimly visible.
   - Moving close enough to a line shows it at full opacity and allows dropping.
@@ -63,7 +65,7 @@ Requires Firefox 140 or later.
 - Refined some of the default settings.
 - Added "Hide scrollbar" and "Remember scroll position" options.
 - Added "Restore closed windows", so closed windows get their own folder instead of mixing into "Recently closed tabs".
-- Added zoom and image scrolling for the background image.
+- Added zoom and image scrolling for the background image feature.
 - Icons in the layout now scales when adjusting font size.
 - Added a text outline option for better visibility with certain background images/colors.
 - Folder animation no longer overlaps.
@@ -77,6 +79,11 @@ Requires Firefox 140 or later.
 - Many additional backend improvements: legacy and dead code removal, internal refactoring, and modernization throughout the codebase.
 
 ## Install
+
+<a href='https://addons.mozilla.org/en-US/firefox/addon/humblenewtab-fork/'>
+<img height='70' src='https://blog.mozilla.org/addons/files/2020/04/get-the-addon-fx-apr-2020.svg' alt="Get the add-on."></a>
+
+---
 
 The extension in this repository runs directly from source (`js-src/*.mjs` and `newtab.css`), no build step is required to load or test it.
 
