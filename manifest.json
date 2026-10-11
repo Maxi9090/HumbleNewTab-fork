@@ -1,6 +1,6 @@
 {
 	"name": "HumbleNewTab-fork",
-	"version": "1.47.16",
+	"version": "1.47.17",
 	"manifest_version": 3,
 	"description": "A minimal new tab page featuring your bookmarks, most visited, and recently closed in a customizable layout.",
 	"icons": {
@@ -9,7 +9,7 @@
 	"browser_specific_settings": {
 		"gecko": {
 			"id": "HumbleNewTab-fork@addon",
-			"strict_min_version": "140.0",
+			"strict_min_version": "121.0",
 			"data_collection_permissions": {
 				"required": ["none"]
 			}
