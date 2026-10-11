@@ -27,20 +27,20 @@ Requires Firefox 140 or later.
 - **Real-time preview:**
   - Changes made in the bookmarks (Library) appear in an already open new tab page without reloading, and "Recent bookmarks" refreshes the same way.
   - There is no polling or scheduled sync. The listeners fire only on actual changes.
-  - Every setting applies as you change it: sliders while you drag them, colors, checkboxes, number inputs, and text fields as you edit them.
+  - All sliders update in real-time as you drag them.
   - The theme can follow your browser's light or dark preference in real-time.
-  - "Recently closed tabs" and "Recently closed windows" update as you close tabs or windows, as you restore an entry from them, and as you remove entries in Firefox View.
+  - "Recently closed tabs" and "Recently closed windows" update as you close tabs or windows, as you restore an entry from them, and as you remove entries in Firefox View (`about:firefoxview`).
 - **Drag and drop UX:**
-  - Made harder to move unintentionally thanks to small drop zones and spatial thresholds.
+  - Made harder to move unintentionally, thanks to small drop zones and spatial thresholds.
+  - Releasing in dead space does nothing.
   - All areas you can actually move to are dimly visible.
   - Moving close enough to a line shows it at full opacity and allows dropping.
-  - Releasing in dead space does nothing.
   - Drag a strayed subfolder back into its parent folder and it re-nests.
 - **Refined UI:**
   - Adaptive by default, following your browser preference until you pick a theme.
   - All elements, including the options panel, context menu, and form controls, theme consistently in Light and Dark modes.
   - Options panel restructured and polished: reorganized sidebar buttons, hover effects on every element, nicer color swatches, and more.
-  - Replaced the PNG icons with SVG icons that inherit the active theme's text color, stay sharp at any DPI/zoom level, are smaller in file size, and load faster.
+  - Replaced the PNG icons with SVG icons that: inherit the active theme's text color, stay sharp at any DPI/zoom level, are smaller in file size, and load faster.
   - Improved readability for the generated CSS and the JSON settings export.
 - **Reworked sliders:**
   - Every slider has a synced number input for typing exact values.
@@ -70,7 +70,7 @@ Requires Firefox 140 or later.
 - Added a text outline option for better visibility with certain background images/colors.
 - Folder animation no longer overlaps.
 - Added "Dynamic height animation", which switches the folder animation to a constant speed when off.
-- The highlight effect stays active while the "Details" menu is open, so you can adjust it and see the changes.
+- The highlight effect stays active while the "Details" menu is open, so you can adjust while seeing it.
 - Failed and privileged-URL favicons get their own placeholder icons.
 - Added a "Navigate to latest new tab" shortcut (in `about:addons` → ⚙️ → Manage Extension Shortcuts) that goes to the most recently used new tab page if one is open, otherwise opens a fresh one.
 - Fixed new tab missing its favicon.
