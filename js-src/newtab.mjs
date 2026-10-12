@@ -8,9 +8,6 @@ const TAB_OPEN_MODE = Object.freeze({
 	BACKGROUND: 2,
 });
 
-// Prefix match so a listed page with a path or query is still covered; no other about: page crashes
-const CRASH_URL = /^(?:about:(?:certificate|keyboard|logins|newtab|pdf|protections|studies|translations)|file:)/;
-
 // Tell the background a page is booting so it keeps its work off this boot, and off the close that preceded it
 browser.runtime.sendMessage({type: 'newtab-booting'}).catch(() => {});
 
@@ -308,17 +305,8 @@ function render(node, target, readyTasks = null) {
 
 	if (url) {
 		// Keep hover visible while native context menu is open, also for action anchors (Recently closed)
-		a.oncontextmenu = (e) => {
+		a.oncontextmenu = () => {
 			setDetailsHighlight(a);
-			if (CRASH_URL.test(url)) {
-				showToast('Warning', 'Choosing "Open Link in New Tab" in the context menu for this URL can crash Firefox');
-				// The toast is every click, the menu block is once per anchor per page load
-				if (!privilegedMenuBlocked.has(a)) {
-					privilegedMenuBlocked.add(a);
-					e.preventDefault();
-					return false;
-				}
-			}
 			setMenuActive(a);
 		};
 	}
@@ -843,12 +831,6 @@ async function openLinks(node) {
 }
 
 let toastHideTimer = null;
-let privilegedMenuBlocked = new WeakSet(); // One native-menu block per crash-URL anchor per page load
-
-// Test-only reset: replaces the page reload that clears the block state in Firefox
-function resetPrivilegedMenuBlockForTest() {
-	privilegedMenuBlocked = new WeakSet();
-}
 
 function showToast(title, detail) {
 	const toast = document.getElementById('toast');
@@ -1713,7 +1695,6 @@ export {
 	getSubTree,
 	toggle,
 	showToast,
-	resetPrivilegedMenuBlockForTest,
 	openLink,
 	columns,
 	root,
