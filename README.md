@@ -2,7 +2,8 @@
 
 A Firefox-only fork of [Humble New Tab Page](https://github.com/ibillingsley/HumbleNewTabPage) focused on instant loading, local-only favicons, and quality of life improvements. Same layout, fully offline, completely rewritten internals.
 
-Requires Firefox 140 or later.
+> [!NOTE]
+> Requires Firefox 121 or later.
 
 ## How it differs
 
@@ -89,7 +90,8 @@ The extension in this repository runs directly from source (`js-src/*.mjs` and `
 
 Load as a temporary add-on via `about:debugging#/runtime/this-firefox` by selecting `manifest.json`, or run `web-ext run --source-dir .` ([web-ext](https://extensionworkshop.com/documentation/develop/getting-started-with-web-ext/)).
 
-Advice: Add `:root {--tabpanel-background-color: YOUR_COLOR_HERE !important;}` in your `userChrome.css` with your background color to fix flicker caused by `about:blank` having a different color.
+> [!TIP]
+> Add `:root {--tabpanel-background-color: YOUR_COLOR_HERE !important;}` in your `userChrome.css` with your background color to fix flicker caused by `about:blank` having a different color.
 
 ## Distribution
 
