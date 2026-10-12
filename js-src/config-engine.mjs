@@ -60,6 +60,12 @@ let theme = {};
 // Cache values to avoid repeated localStorage reads during rendering
 const configCache = new Map();
 
+// Convert a value to the type its config key expects
+function coerceConfigValue(key, value) {
+	const isNumber = typeof config[key] === 'number' || (key.startsWith('show_') && !(key in config));
+	return isNumber ? Number(value) : value;
+}
+
 function getConfig(key) {
 	// Use one get instead of separate has and get lookups
 	const cached = configCache.get(key);
@@ -72,10 +78,7 @@ function getConfig(key) {
 	} else {
 		const value = localStorage.getItem(`options.${key}`);
 		if (value != null) {
-			// Convert dynamic show_* keys to numbers
-			const isShowKey = key.startsWith('show_');
-			const isNumber = typeof config[key] === 'number' || (isShowKey && !(key in config));
-			result = isNumber ? Number(value) : value;
+			result = coerceConfigValue(key, value);
 		} else {
 			// Resolve null placeholders from the active theme
 			result = key in theme && theme[key] != null ? theme[key] : config[key];
@@ -85,13 +88,30 @@ function getConfig(key) {
 	return result;
 }
 
+// The theme choice and the colors it resolves have no static config default
+function hasStaticDefault(key) {
+	return key !== 'theme' && !(key in theme);
+}
+
+// Whether the stored state differs from the default; an adaptive key counts while an explicit value exists
+function hasConfigOverride(key) {
+	const stored = localStorage.getItem(`options.${key}`);
+	if (stored == null) return false;
+	if (!hasStaticDefault(key)) return true;
+	// Read raw storage, never the cache: the panel refresh must not drop an override it has not read
+	return coerceConfigValue(key, stored) !== config[key];
+}
+
 // Keep storage and style updates here. Listeners handle other side effects
 function setConfig(key, value) {
 	configCache.delete(key);
 
 	const storageKey = `options.${key}`;
 	if (value != null) {
-		BookmarkCache.safeSetItem(storageKey, typeof config[key] === 'number' ? Number(value) : value);
+		const stored = coerceConfigValue(key, value);
+		// A default-equal value is not an override, so it is not stored
+		if (hasStaticDefault(key) && stored === config[key]) BookmarkCache.safeRemoveItem(storageKey);
+		else BookmarkCache.safeSetItem(storageKey, stored);
 	} else {
 		BookmarkCache.safeRemoveItem(storageKey);
 		value = key === 'theme' ? themes._.resolve() : key in theme && theme[key] != null ? theme[key] : config[key];
@@ -244,4 +264,4 @@ function notifyConfigChange(key, value) {
 	}
 }
 
-export {config, theme, configCache, getConfig, setConfig, styleSchema, applyTheme, notifyConfigChange, addConfigChangeListener};
+export {config, theme, configCache, getConfig, hasConfigOverride, setConfig, styleSchema, applyTheme, notifyConfigChange, addConfigChangeListener};

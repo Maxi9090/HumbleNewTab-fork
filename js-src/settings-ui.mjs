@@ -1,6 +1,6 @@
 import {BookmarkCache} from './bookmark-cache.mjs';
 import {themes} from './themes.mjs';
-import {config, theme, configCache, getConfig, setConfig, styleSchema, applyTheme, addConfigChangeListener} from './config-engine.mjs';
+import {config, theme, configCache, getConfig, hasConfigOverride, setConfig, styleSchema, applyTheme, addConfigChangeListener} from './config-engine.mjs';
 import {PERMISSION_FOR_KEY, captureImportUndo, createUndoArrow, recordUndo, refreshUndoArrow, requestShowPermissions, revertLastChange, storeUndoRecord} from './settings-undo.mjs';
 
 // Receive mutable core hooks because imported ESM bindings are read-only
@@ -43,11 +43,14 @@ function cancelPendingSliderPreview() {
 	}
 }
 
-// Show the reset control when the key is explicitly set
+// Show the reset control when the value differs from its default
 function refreshResetArrow(input, key, value) {
 	if (!input?.reset) return;
 	const v = value ?? getConfig(key);
-	const hasOverride = localStorage.getItem(`options.${key}`) != null;
+	const stored = localStorage.getItem(`options.${key}`);
+	const hasOverride = hasConfigOverride(key);
+	// A stored value that already matches the default is not an override, so it is dropped
+	if (stored != null && !hasOverride) BookmarkCache.safeRemoveItem(`options.${key}`);
 	input.reset.style.visibility = hasOverride ? null : 'hidden';
 	if (input.swatch) input.swatch.value = v;
 }
