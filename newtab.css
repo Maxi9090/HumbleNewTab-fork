@@ -94,7 +94,7 @@ body {
 	background: transparent;
 }
 .drop-overlay-nest {
-	outline: 2px dashed var(--text-bright);
+	outline: 2px dashed var(--text-strong);
 }
 
 
@@ -167,7 +167,7 @@ body {
 	font-size: 1.2em;
 	line-height: 2;
 	background-color: var(--bg);
-	color: var(--text-bright);
+	color: var(--text-strong);
 	border: solid 1px var(--border);
 	border-radius: 3px;
 	box-shadow: 0 1px 10px var(--border-shadow);
@@ -187,13 +187,13 @@ body {
 }
 .menu a {
 	display: block;
-	color: var(--text-bright);
+	color: var(--text-strong);
 	padding: 0 2em;
 	cursor: default;
 }
 .menu a:hover {
 	background-color: var(--bg-hover);
-	outline: solid 1px var(--border-hover);
+	outline: solid 1px #57b0ff;
 	position: relative;
 }
 .menu li:first-child a {
@@ -217,7 +217,7 @@ body {
 #options {
 	display: none;
 	font-size: 1.4em;
-	color: var(--text-bright);
+	color: var(--text-strong);
 	border: solid var(--border);
 	border-width: 0 0 1px 1px;
 	box-shadow: 0 2px 10px var(--border-shadow);
@@ -247,10 +247,10 @@ body {
 }
 #options_nav a:hover {
 	background-color: var(--bg-hover);
-	outline: solid thin var(--border-hover);
+	outline: solid thin #57b0ff;
 }
 #options_nav a.current {
-	color: var(--text-bright);
+	color: var(--text-strong);
 	background-color: var(--bg);
 	border-color: var(--border);
 	margin-right: -1px;
@@ -274,7 +274,7 @@ body {
 	cursor: pointer;
 	top: 0;
 	right: 0;
-	background-color: var(--text-bright);
+	background-color: var(--text-strong);
 	mask: url('icons/options.svg') no-repeat center / 1.7em;
 	opacity: 0.6;
 }
@@ -283,7 +283,7 @@ body {
 	opacity: 0.9;
 }
 #options_close_button {
-	color: var(--text-bright);
+	color: var(--text-strong);
 	text-align: center;
 	font-size: 1.6em;
 	position: absolute;
@@ -339,7 +339,7 @@ label span {
 	color: var(--text-label);
 }
 label:has(input[type='checkbox']:hover) {
-	box-shadow: 0 0 4px -1px var(--text-bright);
+	box-shadow: 0 0 4px -1px var(--text-strong);
 }
 label.range-label {
 	display: flex;
@@ -386,14 +386,14 @@ input, select, textarea {
 	border-radius: 3px;
 }
 input, select {
-	color: var(--text-bright);
+	color: var(--text-strong);
 	background-color: var(--bg-grey);
 }
 input[type='number']:focus, input[type='text']:focus, textarea:focus {
 	outline-style: solid;
 }
 input[type='number']:hover, input[type='text']:hover, select:hover, textarea:hover {
-	box-shadow: 0 0 4px -1px var(--text-bright);
+	box-shadow: 0 0 4px -1px var(--text-strong);
 }
 select {
 	vertical-align: mathematical;
@@ -486,10 +486,10 @@ input[type='range']::-moz-range-progress {
 	height: 0.3em;
 	background: var(--range-progress);
 	border-radius: 9em 0 0 9em;
-	border: 0.07em solid var(--range-progress-border);
+	border: 0.07em solid #2374ff;
 }
 input[type='range']:hover::-moz-range-progress {
-	background: var(--range-progress-hover);
+	background: #2374ff;
 	border-color: var(--range-progress-border-hover);
 }
 input[type='range']::-moz-range-track {
@@ -515,7 +515,7 @@ input[type='range']:hover::-moz-range-thumb {
 	box-shadow: var(--range-thumb-shadow-hover);
 }
 input[type='range']:active::-moz-range-thumb {
-	background: var(--range-thumb-active);
+	background: #0060df;
 	border-color: #fff;
 }
 
@@ -524,8 +524,8 @@ input[type='range']:active::-moz-range-thumb {
 	align-self: center;
 	width: 1.4em;
 	height: 1.2em;
-	background-color: var(--text-bright);
-	opacity: 0.7;
+	background-color: var(--text-strong);
+	opacity: 0.5;
 	mask: url('icons/revert.svg') no-repeat center / 100% 100%;
 	cursor: pointer;
 	margin: -0.1em -0.3em 0 0;
@@ -544,7 +544,7 @@ input[type='range']:active::-moz-range-thumb {
 	white-space: pre-wrap;
 	padding: 0.8em 1.4em;
 	background-color: var(--bg-hover);
-	color: var(--text-bright);
+	color: var(--text-strong);
 	font-size: 1.5em;
 	line-height: 1.4;
 	text-align: center;
@@ -594,9 +594,9 @@ input[type='range']:active::-moz-range-thumb {
 	cursor: pointer;
 }
 .storage-full-error button:hover {
-	color: var(--text-bright);
+	color: var(--text-strong);
 	background: var(--bg-hover);
-	border-color: var(--border-hover);
+	border-color: #57b0ff;
 	box-shadow: 0 0 8px rgb(255 0 0 / 50%);
 }
 .cache-error h1 {
