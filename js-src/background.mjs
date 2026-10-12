@@ -339,7 +339,7 @@ function resetPrefetchForTest() {
 }
 
 function getPrefetchStateForTest() {
-	return {timerActive: prefetchTimer !== null, inFlight: prefetchInFlight, lastPrefetchAt, dirty: prefetchDirty};
+	return {timerActive: prefetchTimer !== null, inFlight: prefetchInFlight, dirty: prefetchDirty};
 }
 
 function setPrefetchLastAtForTest(value) {
@@ -556,11 +556,8 @@ function getHoldStateForTest() {
 	return {
 		held: isHeld(),
 		pagesBooting,
-		bootDeadline,
 		quietUntil,
-		heldSyncCheck,
 		heldPrefetch,
-		timerActive: holdTimer !== null,
 	};
 }
 
@@ -568,7 +565,6 @@ function getBookmarkDebounceStateForTest() {
 	return {
 		pendingChangeCount,
 		timerActive: bookmarkSyncTimer !== null,
-		syncInProgress,
 	};
 }
 
@@ -577,7 +573,6 @@ export {
 	BOOKMARK_BULK_DEBOUNCE_MS,
 	BULK_CHANGE_THRESHOLD,
 	SESSIONS_DEBOUNCE_MS,
-	PREFETCH_DEBOUNCE_MS,
 	PAGE_SETTLE_GRACE_MS,
 	PAGE_BOOT_MAX_MS,
 	TAB_CLOSE_QUIET_MS,

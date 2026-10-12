@@ -362,7 +362,6 @@ export {
 	setFaviconBackground,
 	setFaviconError,
 	refreshOpenTabsFavicons,
-	walkFaviconRefreshLinks,
 	resetOpenTabsFaviconMapForTest,
 	setOpenTabsFaviconMapForTest,
 };
