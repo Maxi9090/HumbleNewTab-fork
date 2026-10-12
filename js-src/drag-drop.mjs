@@ -1,5 +1,6 @@
 import {BookmarkCache} from './bookmark-cache.mjs';
 import {getConfig} from './config-engine.mjs';
+import {recordLayoutChange} from './settings-undo.mjs';
 
 // Receive mutable core hooks because imported bindings are read-only
 let hooks = null;
@@ -334,13 +335,27 @@ function enableDragDrop() {
 			hideDropZone();
 			return false;
 		}
-		if (dragKind === 'column' || a.intent === 'column') hooks.addColumn(dragIds, a.x);
-		else if (a.intent === 'merge') {
-			const source = hooks.getCoords()[dragIds[0]];
-			if (source) hooks.removeRow(source.x, source.y);
-		} else hooks.addRow(dragIds[0], a.x, a.y);
+		// A committed drop is one undoable layout move
+		recordLayoutChange(() => {
+			if (dragKind === 'column' || a.intent === 'column') hooks.addColumn(dragIds, a.x);
+			else if (a.intent === 'merge') {
+				const source = hooks.getCoords()[dragIds[0]];
+				if (source) hooks.removeRow(source.x, source.y);
+			} else hooks.addRow(dragIds[0], a.x, a.y);
+		});
 		hideDropZone();
 	};
+}
+
+// Menu moves record like drops
+function undoableItems(items) {
+	for (let i = 0, len = items.length; i < len; i++) {
+		const item = items[i];
+		if (!item?.action) continue;
+		const action = item.action;
+		item.action = () => recordLayoutChange(action);
+	}
+	return items;
 }
 
 function lockMenuItems(index, ids) {
@@ -352,7 +367,7 @@ function lockMenuItems(index, ids) {
 		if (index > 0) items.push({label: 'Move folder left', action: () => hooks.addRow(ids[0], index - 1)});
 		if (index < hooks.getColumns().length - 1) items.push({label: 'Move folder right', action: () => hooks.addRow(ids[0], index + 1)});
 	}
-	return items;
+	return undoableItems(items);
 }
 
 function lockFolderMenuItems(node, folderHooks) {
@@ -368,7 +383,7 @@ function lockFolderMenuItems(node, folderHooks) {
 		if (pos.x < columns.length - 1) items.push({label: 'Move folder right', action: () => folderHooks.addRow(node.id, pos.x + 1)});
 		if (!folderHooks.getRootSet()?.has(node.id)) items.push({label: 'Remove folder', action: () => folderHooks.removeRow(pos.x, pos.y)});
 	}
-	return items;
+	return undoableItems(items);
 }
 
 // Remove drop handlers when locking at runtime

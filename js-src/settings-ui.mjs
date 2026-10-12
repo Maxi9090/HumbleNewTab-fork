@@ -1,6 +1,7 @@
 import {BookmarkCache} from './bookmark-cache.mjs';
 import {themes} from './themes.mjs';
 import {config, theme, configCache, getConfig, setConfig, styleSchema, applyTheme, addConfigChangeListener} from './config-engine.mjs';
+import {PERMISSION_FOR_KEY, captureImportUndo, createUndoArrow, recordUndo, refreshUndoArrow, requestShowPermissions, revertLastChange, storeUndoRecord} from './settings-undo.mjs';
 
 // Receive mutable core hooks because imported ESM bindings are read-only
 let coreHooks = null;
@@ -50,13 +51,6 @@ function refreshResetArrow(input, key, value) {
 	input.reset.style.visibility = hasOverride ? null : 'hidden';
 	if (input.swatch) input.swatch.value = v;
 }
-
-// Map settings to permissions requested by their checkboxes
-const PERMISSION_FOR_KEY = {
-	show_top: 'topSites',
-	show_closed: 'sessions',
-	show_windows: 'sessions',
-};
 
 // One prompt per permission: a second enabling click while the prompt is open reuses the in-flight request
 const pendingPermissionRequests = new Map();
@@ -187,6 +181,7 @@ function initConfig(key) {
 			const reader = new FileReader();
 			reader.onload = (f) => {
 				if (f.target.result) {
+					recordUndo(key);
 					setConfig(key, f.target.result);
 					BookmarkCache.safeSetItem('background_image_filename', file.name);
 					BookmarkCache.safeRemoveItem('background_image_width');
@@ -204,6 +199,7 @@ function initConfig(key) {
 			input.checked = false;
 			return;
 		}
+		recordUndo(key);
 		setConfig(key, value);
 	};
 
@@ -212,6 +208,7 @@ function initConfig(key) {
 	reset.title = 'Reset to default';
 	reset.tabIndex = 0;
 	reset.onclick = () => {
+		recordUndo(key);
 		setConfig(key, null);
 		if (input.type === 'file') {
 			input.value = '';
@@ -254,6 +251,17 @@ function refreshListCountDisabled() {
 		const input = document.getElementById(`options_${countKey}`);
 		if (input) input.disabled = !getConfig(showKey);
 	}
+}
+
+function refreshSettingsControls() {
+	const configKeys = Object.keys(config);
+	for (let i = 0, len = configKeys.length; i < len; i++) {
+		const k = configKeys[i];
+		showConfig(k);
+		refreshResetArrow(document.getElementById(`options_${k}`), k);
+	}
+	refreshBgScrollDisabled();
+	refreshListCountDisabled();
 }
 
 function initializeThemeOptions() {
@@ -457,10 +465,26 @@ function initSettings() {
 	const exportsArea = document.getElementById('options_export');
 	const importsArea = document.getElementById('options_import');
 	importsArea.placeholder = 'Paste exported settings here.';
+	// Undo arrow, placed after the import label like the config revert arrows
+	const undo = createUndoArrow();
+	undo.onclick = async () => {
+		if (await revertLastChange()) {
+			coreHooks.loadSettings();
+			await coreHooks.loadColumns();
+			refreshSettingsControls();
+			exportsArea.value = exportSettings();
+			importsArea.placeholder = 'Last change reverted.';
+		}
+		return false;
+	};
+	importsArea.undo = undo;
+	importsArea.parentNode.insertAdjacentElement('afterend', undo);
 	importsArea.onchange = async () => {
 		try {
 			const imported = JSON.parse(importsArea.value);
 			const entries = parseImportedSettings(imported);
+			// Snapshot what the import is about to replace so the whole import stays undoable
+			const undoRecord = captureImportUndo(entries);
 			// Preserve folder state, the bookmark cache, special folder content, and the background image, which is never exported
 			const specialBefore = coreHooks.captureSpecialShowState?.();
 			const keep = [];
@@ -479,26 +503,17 @@ function initSettings() {
 				BookmarkCache.safeSetItem(k, String(v));
 			}
 			configCache.clear();
+			storeUndoRecord(undoRecord);
 
 			// Request imported optional permissions before the first await ends the user gesture
 			const permKeys = [];
-			const permsToRequest = [];
 			for (const key in PERMISSION_FOR_KEY) {
 				const v = imported[`options.${key}`];
-				if (v === '1' || v === 1) {
-					permKeys.push(key);
-					permsToRequest.push(PERMISSION_FOR_KEY[key]);
-				}
+				if (v === '1' || v === 1) permKeys.push(key);
 			}
-			if (permsToRequest.length) {
-				let granted = false;
-				try {
-					granted = await browser.permissions.request({permissions: [...new Set(permsToRequest)]});
-				} catch {}
-				if (!granted) {
-					for (let i = 0, len = permKeys.length; i < len; i++) {
-						setConfig(permKeys[i], null);
-					}
+			if (permKeys.length && !(await requestShowPermissions(permKeys))) {
+				for (let i = 0, len = permKeys.length; i < len; i++) {
+					setConfig(permKeys[i], null);
 				}
 			}
 
@@ -509,14 +524,7 @@ function initSettings() {
 			// Await the layout reload so the show-state diff acts on the imported layout, never the stale one
 			await coreHooks.loadColumns();
 			coreHooks.applySpecialShowDiff?.(specialBefore);
-			const configKeys = Object.keys(config);
-			for (let i = 0, len = configKeys.length; i < len; i++) {
-				const k = configKeys[i];
-				showConfig(k);
-				refreshResetArrow(document.getElementById(`options_${k}`), k);
-			}
-			refreshBgScrollDisabled();
-			refreshListCountDisabled();
+			refreshSettingsControls();
 		} catch (e) {
 			importsArea.value = '';
 			importsArea.placeholder = `${importErrorReason(e)}`;
@@ -594,6 +602,7 @@ function showOptions(show, hooks) {
 	coreHooks.setUiBusy(show);
 	coreHooks.setDetailsMenuActive?.(show && activeNavIndex === DETAILS_TAB_INDEX);
 	if (show) {
+		refreshUndoArrow();
 		const configKeys = Object.keys(config);
 		for (let i = 0, len = configKeys.length; i < len; i++) {
 			showConfig(configKeys[i]);

@@ -72,6 +72,7 @@ A Firefox-only fork of [Humble New Tab Page](https://github.com/ibillingsley/Hum
 - Folder animation no longer overlaps.
 - Added "Dynamic height animation", which switches the folder animation to a constant speed when off.
 - The highlight effect stays active while the "Details" menu is open, so you can adjust while seeing it.
+- Added undo button to import settings which reverts the last change of any settings, but only the last change is recorded.
 - Failed and privileged-URL favicons get their own placeholder icons.
 - Added a "Navigate to latest new tab" shortcut (in `about:addons` → ⚙️ → Manage Extension Shortcuts) that goes to the most recently used new tab page if one is open, otherwise opens a fresh one.
 - Fixed new tab missing its favicon.
