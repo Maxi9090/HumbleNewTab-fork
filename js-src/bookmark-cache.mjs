@@ -244,7 +244,8 @@ const BookmarkCache = {
 			this._newtabUrlPrefix = browser.runtime.getURL('newtab.html');
 		}
 		if (this._newtabUrlPrefix && url.startsWith(this._newtabUrlPrefix)) return true;
-		return tab.title === 'New Tab';
+		// The title fallback stays on placeholder pages so a real page titled New Tab is kept
+		return url.startsWith('about:') && tab.title === 'New Tab';
 	},
 
 	// Row keys are 128-bit pixel digests. Error rows key by the site itself, which never hex-matches
@@ -313,6 +314,11 @@ const BookmarkCache = {
 		return this._parseRecord(this._storageKey(key));
 	},
 
+	// Storage pressure is expected and never fatal
+	isQuotaError(error) {
+		return error?.name === 'QuotaExceededError' || error?.code === 22;
+	},
+
 	// Tolerate a full quota: the in-memory state still serves the session
 	safeSetItem(key, value) {
 		try {
@@ -320,7 +326,7 @@ const BookmarkCache = {
 			this._storageWarningKeys.delete(key);
 			return true;
 		} catch (e) {
-			const isQuota = e?.name === 'QuotaExceededError' || e?.code === 22;
+			const isQuota = this.isQuotaError(e);
 			if (!isQuota || !this._storageWarningKeys.has(key)) {
 				console.warn('[Storage] write failed:', key, e);
 				if (isQuota) this._storageWarningKeys.add(key);
