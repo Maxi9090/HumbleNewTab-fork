@@ -1001,7 +1001,6 @@ function showCacheError(error) {
 	document.body.append(errorDiv);
 
 	console.error('[BookmarkCache] Cache unavailable:', error);
-	console.error('[BookmarkCache] Open about:debugging, find this extension, and click Inspect to see its logs');
 }
 
 async function renderLoadedColumns(generation) {
