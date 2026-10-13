@@ -937,13 +937,17 @@ function verifyColumns() {
 	}
 }
 
+function isQuotaError(error) {
+	return error?.name === 'QuotaExceededError' || error?.code === 22;
+}
+
 function storageIsFull() {
 	const probeKey = '__hntp_storage_probe__';
 	try {
 		// One write per probe: the value alternates so the write is never a no-op
 		localStorage.setItem(probeKey, localStorage.getItem(probeKey) === '1' ? '2' : '1');
 	} catch (error) {
-		return BookmarkCache.isQuotaError(error);
+		return isQuotaError(error);
 	}
 	return false;
 }
@@ -1042,7 +1046,7 @@ async function loadColumns(forceReload = false) {
 		await BookmarkCache.loadAllData(forceReload);
 	} catch (e) {
 		console.error('[BookmarkCache] loadAllData failed:', e);
-		if (BookmarkCache.isQuotaError(e) || storageIsFull()) showStorageFullError(e);
+		if (isQuotaError(e) || storageIsFull()) showStorageFullError(e);
 		else showCacheError(e);
 		return false;
 	}
@@ -1626,8 +1630,8 @@ function navigateKeyDown(e) {
 	}
 }
 
-document.addEventListener('keypress', (e) => {
-	if (e.key === 'Enter' && e.target?.onclick && e.target.tagName === 'A') {
+document.addEventListener('keydown', (e) => {
+	if (e.key === 'Enter' && !e.altKey && !e.metaKey && !e.isComposing && e.target?.onclick && e.target.tagName === 'A') {
 		e.preventDefault();
 		e.target.click();
 	}
