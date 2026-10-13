@@ -350,8 +350,7 @@ const BookmarkCache = {
 	async decodeTree(record) {
 		try {
 			const stream = new Blob([Uint8Array.fromBase64(record.tree)]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-			const out = await new Response(stream).arrayBuffer();
-			return JSON.parse(new TextDecoder().decode(out));
+			return JSON.parse(await new Response(stream).text());
 		} catch (e) {
 			console.warn('[BookmarkCache] tree decode failed:', e);
 			return null;
@@ -542,8 +541,8 @@ const BookmarkCache = {
 	async fullSync() {
 		const tree = await browser.bookmarks.getTree();
 
-		const nested = this.nestTree(tree);
-		const folderRecords = this.flattenTree([nested]);
+		// The API tree flattens directly. The nested form is only needed for the stored record
+		const folderRecords = this.flattenTree(tree.length > 0 ? tree : [{id: '0', title: '', children: []}]);
 		// Match the Content input: 15 by default and 50 maximum
 		const raw = Number(localStorage.getItem('options.number_recent'));
 		const recentLimit = raw > 0 ? Math.min(raw, RECENT_MAX_LIMIT) : RECENT_DEFAULT_LIMIT;
@@ -552,7 +551,15 @@ const BookmarkCache = {
 		const showRecent = localStorage.getItem('options.show_recent');
 		const recentEnabled = showRecent == null || Number(showRecent) !== 0;
 
-		// Reclaim favicon rows whose bookmark no longer exists
+		const hash = this.computeSyncHash(folderRecords, recentBookmarks);
+		const storedHashRecord = await this.getStored('meta:hash');
+		// A matching hash only says the live tree is unchanged, so the stored records are verified too before the write is skipped
+		if (storedHashRecord?.value === hash && (await this.storedCacheIntact())) {
+			if (recentEnabled) await this.reconcileRecentCache(recentLimit, recentBookmarks);
+			return folderRecords.length;
+		}
+
+		// A hash match means the live key set is unchanged, so the reclaim only runs on the write path
 		const liveKeys = new Set();
 		for (let i = 0; i < folderRecords.length; i++) {
 			const children = folderRecords[i].value?.children;
@@ -566,14 +573,7 @@ const BookmarkCache = {
 		}
 		this._sweepFaviconRows((site) => liveKeys.has(site), true);
 
-		const hash = this.computeSyncHash(folderRecords, recentBookmarks);
-		const storedHashRecord = await this.getStored('meta:hash');
-		// A matching hash only says the live tree is unchanged, so the stored records are verified too before the write is skipped
-		if (storedHashRecord?.value === hash && (await this.storedCacheIntact())) {
-			if (recentEnabled) await this.reconcileRecentCache(recentLimit, recentBookmarks);
-			return folderRecords.length;
-		}
-
+		const nested = this.nestTree(tree);
 		const now = Date.now();
 		const treeValue = await this.encodeTree(nested);
 		const allRecords = [
@@ -605,33 +605,38 @@ const BookmarkCache = {
 		return this.treeChecksum(JSON.stringify({folderRecords, recentBookmarks}));
 	},
 
+	// Bounded insert keeps the newest entries without sorting the whole set
 	extractRecentBookmarks(tree, limit = RECENT_DEFAULT_LIMIT) {
-		const bookmarks = [];
+		const top = [];
 
-		function collectBookmarks(node) {
+		function considerBookmark(node) {
 			if (node.url && node.dateAdded) {
-				bookmarks.push({
+				const entry = {
 					id: node.id,
 					title: node.title,
 					url: node.url,
 					dateAdded: node.dateAdded,
-				});
+				};
+				let i = top.length;
+				// Equal timestamps keep collection order, matching the previous stable sort
+				while (i > 0 && top[i - 1].dateAdded < entry.dateAdded) i--;
+				if (i < limit) {
+					top.splice(i, 0, entry);
+					if (top.length > limit) top.pop();
+				}
 			}
 			if (node.children) {
 				for (let i = 0; i < node.children.length; i++) {
-					const child = node.children[i];
-					collectBookmarks(child);
+					considerBookmark(node.children[i]);
 				}
 			}
 		}
 
 		for (let i = 0; i < tree.length; i++) {
-			const node = tree[i];
-			collectBookmarks(node);
+			considerBookmark(tree[i]);
 		}
 
-		bookmarks.sort((a, b) => b.dateAdded - a.dateAdded);
-		return bookmarks.slice(0, limit);
+		return top;
 	},
 
 	// Use one record shape for cached and live closed sessions

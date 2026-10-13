@@ -460,7 +460,7 @@ async function prefetchFavicons() {
 	}
 	if (keys.size === 0) return;
 
-	const {byOrigin, byOriginPath} = await faviconMapsForPages(true);
+	const {byOrigin, byOriginPath} = await faviconMapsForPages();
 	// Preload the mirror for synchronous per-key checks
 	const faviconCache = await BookmarkCache.loadFavicons();
 	const genericDataUrl = await BookmarkCache.getGenericIconDataUrl();
