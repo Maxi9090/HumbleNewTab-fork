@@ -196,6 +196,13 @@ function initConfig(key) {
 			reader.readAsDataURL(file);
 			return;
 		}
+		// Invalid hex snaps back and never spends the undo point or a storage write
+		if (input.swatch && !HEX_COLOR_RE.test(input.value)) {
+			const current = getConfig(key);
+			input.value = current;
+			input.swatch.value = current;
+			return;
+		}
 		const value = input.type === 'checkbox' ? Number(input.checked) : input.value;
 		const perm = PERMISSION_FOR_KEY[key];
 		if (perm && value && !(await requestPermission(perm))) {
@@ -418,6 +425,9 @@ function renderAdvancedCss() {
 
 // Filter non-numeric keyboard input because desktop Firefox is permissive
 const NUMERIC_INPUT_RE = /^[-+\d.eE]*$/;
+
+// The hex forms the color fields accept: #rgb, #rgba, #rrggbb, #rrggbbaa
+const HEX_COLOR_RE = /^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
 
 function initSettings() {
 	settingsInitialized = true;
