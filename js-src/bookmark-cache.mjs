@@ -108,7 +108,6 @@ const BookmarkCache = {
 	},
 
 	// Memoize URL parsing because page and background share the same key rules
-	URL_PARTS_CACHE_LIMIT: 2048,
 	_urlPartsCache: new Map(),
 	getUrlParts(urlStr) {
 		const cache = this._urlPartsCache;
@@ -134,9 +133,8 @@ const BookmarkCache = {
 		} catch {
 			info = {origin: null, key: null};
 		}
-		// Freeze the memo at its limit instead of evicting:
-		// an eviction marks the entry removed and fixes up live iterators, which churns the engine's ordered table for the sake of one URL parse
-		if (cache.size < this.URL_PARTS_CACHE_LIMIT) cache.set(urlStr, info);
+		// Never evict: an eviction marks the entry removed and fixes up live iterators, which churns the engine's ordered table for the sake of one URL parse
+		cache.set(urlStr, info);
 		return info;
 	},
 
