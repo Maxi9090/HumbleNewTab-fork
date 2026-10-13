@@ -937,17 +937,13 @@ function verifyColumns() {
 	}
 }
 
-function isQuotaError(error) {
-	return error?.name === 'QuotaExceededError' || error?.code === 22;
-}
-
 function storageIsFull() {
 	const probeKey = '__hntp_storage_probe__';
 	try {
 		// One write per probe: the value alternates so the write is never a no-op
 		localStorage.setItem(probeKey, localStorage.getItem(probeKey) === '1' ? '2' : '1');
 	} catch (error) {
-		return isQuotaError(error);
+		return BookmarkCache.isQuotaError(error);
 	}
 	return false;
 }
@@ -1046,7 +1042,7 @@ async function loadColumns(forceReload = false) {
 		await BookmarkCache.loadAllData(forceReload);
 	} catch (e) {
 		console.error('[BookmarkCache] loadAllData failed:', e);
-		if (isQuotaError(e) || storageIsFull()) showStorageFullError(e);
+		if (BookmarkCache.isQuotaError(e) || storageIsFull()) showStorageFullError(e);
 		else showCacheError(e);
 		return false;
 	}
