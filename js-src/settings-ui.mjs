@@ -303,7 +303,7 @@ function initializeConfigControls() {
 	refreshListCountDisabled();
 }
 
-// Inclusion list: only schema options and layout cells are exportable, so keys written by anything else never leave the page
+// Export only schema options and layout cells, other keys never leave the page
 function exportReplacer(k, v) {
 	// JSON.stringify calls the replacer once with an empty key for the object itself
 	if (k === '') return v;
@@ -498,7 +498,7 @@ function initSettings() {
 			const entries = parseImportedSettings(imported);
 			// Snapshot what the import is about to replace so the whole import stays undoable
 			const undoRecord = captureImportUndo(entries);
-			// Preserve folder state, the bookmark cache, special folder content, and the background image, which is never exported
+			// Preserve folder state, the bookmark cache, special folder content, and the background image
 			const specialBefore = coreHooks.captureSpecialShowState?.();
 			const keep = [];
 			for (let i = 0, len = localStorage.length; i < len; i++) {

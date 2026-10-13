@@ -137,7 +137,7 @@ body {
 .window::before {
 	mask-image: url('icons/window.svg');
 }
-/* URL favicons via --favicon. page.svg mask is the neutral placeholder while unset. .favicon-privileged and .favicon-error override to their placeholders */
+/* URL favicons come from --favicon with page.svg as the unset placeholder, the state classes override it */
 #main .column a[href]::before {
 	background-image: var(--favicon, none);
 	mask: var(--favicon, url('icons/page.svg')) no-repeat center / 100% 100%;
@@ -150,12 +150,12 @@ body {
 	background-image: none;
 	mask: url('icons/page_error.svg') no-repeat center / 100% 100%;
 }
-/* Real favicons paint unmasked with a transparent backing: the mask would clip SVG/PNG transparency to the text color, and mask-image blocks cross-origin chrome:// loads */
+/* Real favicons paint unmasked, the mask clips transparency and blocks cross-origin chrome:// loads */
 #main .column a[href].favicon-unmasked::before {
 	mask: none;
 	background-color: transparent;
 }
-/* Luma-conflict: the icon is near-backdrop, invert lifts contrast while hue-rotate approximates hue restoration. Only set on data-URI favicons (tainted https pixels are unreadable) */
+/* Near-backdrop icons invert for contrast, hue-rotate approximates the original hue, data-URI favicons only */
 #main .column a[href].favicon-unmasked.favicon-conflict::before {
 	filter: invert(1) hue-rotate(180deg);
 }
@@ -307,7 +307,7 @@ legend {
 	grid-column: 1 / -1;
 	cursor: default;
 }
-/* Grid pairs each label with its sibling .revert arrow (initConfig inserts revert after the label, not inside it) */
+/* Grid pairs each label with its sibling .revert arrow, inserted after the label */
 fieldset, #options_show_bookmarks {
 	display: grid;
 	grid-template-columns: 1fr auto;
@@ -359,7 +359,7 @@ label span.unit {
 	z-index: 1;
 	text-align: end;
 }
-/* Value caption beside the label, before the number box. Must stay after label.range-label>span, which it ties on specificity */
+/* Value caption, must stay after label.range-label>span, which it ties on specificity */
 label span.range-value {
 	order: 1;
 	margin: 0 1.7em 0 0;

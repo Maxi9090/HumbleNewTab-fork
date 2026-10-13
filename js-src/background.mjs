@@ -8,10 +8,10 @@ let sessionsSyncInFlight = false;
 let sessionsDirty = false;
 let lastFullSyncAt = 0;
 const SESSIONS_DEBOUNCE_MS = 200;
-// Bookmark events drive the sync, so this window only has to cover a dead event page. A short window re-reads the whole tree on almost every open
+// Bookmark events drive the sync, so this window only covers a dead event page
 const NEW_TAB_REFRESH_AGE_MS = 30_000;
 
-// Keep background work off a page boot and its aftermath. Never gate the closed-tab sync
+// Keep background work off a page boot and its aftermath, never gate the closed-tab sync
 const PAGE_SETTLE_GRACE_MS = 1_200;
 const PAGE_BOOT_MAX_MS = 3_000;
 const TAB_CLOSE_QUIET_MS = 1_000;
@@ -139,7 +139,7 @@ let lastSessionsSignature = null;
 // Firefox holds at most 5 closed windows, so only the tabs record keeps the 25-entry cap
 const CLOSED_RECORD_LIMITS = {closed: {max: 25, fallback: 15}, windows: {max: 5, fallback: 5}};
 
-// The page paints these records directly, so the background owns them. Skip a record while its folder is disabled
+// These records are page-painted, so the background owns them
 function writeClosedRecord(id, data) {
 	const show = localStorage.getItem(`options.show_${id}`);
 	if (show == null || Number(show) === 0) return;
@@ -283,7 +283,7 @@ browser.runtime.onMessage.addListener((message) => {
 		return performBookmarkSync('storage-cleared', {force: true});
 	}
 	if (message?.type === 'recent-limit-changed') {
-		// Re-sync when number_recent changes or the folder is re-enabled. The reply lets the page repaint after the write
+		// Re-sync when number_recent changes or the folder is re-enabled, the reply tells the page to repaint
 		return performBookmarkSync('recent-limit-changed', {force: true});
 	}
 	if (message?.type === 'closed-limit-changed') {
@@ -349,7 +349,7 @@ function setPrefetchLastAtForTest(value) {
 // Reuse the shared URL parser while keeping a background test binding
 const getUrlParts = (urlStr) => BookmarkCache.getUrlParts(urlStr);
 
-// Persist tainted URLs so favicons survive restart. Pixel luma is unavailable
+// Persist tainted URLs so favicons survive restart
 async function captureFavicon(favIconUrl) {
 	return new Promise((resolve) => {
 		const img = new Image();
@@ -357,7 +357,7 @@ async function captureFavicon(favIconUrl) {
 			try {
 				resolve(await BookmarkCache.captureFaviconResult(favIconUrl, img));
 			} catch {
-				// Persist the raw URL when canvas access is blocked by taint. The row digest keys on the URL string
+				// Persist the raw URL when taint blocks canvas access
 				const id = await BookmarkCache.digestString(favIconUrl);
 				resolve({dataUrl: favIconUrl, hash: id, srcId: id, lumaClass: null});
 			}
@@ -378,7 +378,7 @@ async function buildOpenTabsFaviconMaps() {
 	}
 }
 
-// Serve page requests from one build: listing every tab costs a parent round trip, and each page asks on boot
+// One cached build serves every page request, a tabs.query costs a parent round trip
 let cachedFaviconMaps = null;
 async function faviconMapsForPages(refresh = false) {
 	if (refresh || !cachedFaviconMaps) cachedFaviconMaps = await buildOpenTabsFaviconMaps();
@@ -413,7 +413,7 @@ async function classifyKeysForFavicon(keys, keyOrigins, byOrigin, byOriginPath, 
 		const stored = storeKey === key ? cached : faviconCache.get(origin);
 		const storedPoisoned = stored && stored.dataUrl && BookmarkCache.isPrivilegedScheme(stored.dataUrl) && !BookmarkCache.isPrivilegedScheme(origin);
 		if (storeKey !== key) {
-			// Reclaim duplicate, poisoned, and unacceptable path entries. A differing acceptable per-path capture stays as last-known display
+			// Reclaim duplicates and poisoned entries, a differing acceptable capture stays last-known
 			if (cached && (poisoned || cached.provider || cached.dataUrl === genericDataUrl || (stored && !stored.provider && stored.dataUrl === cached.dataUrl))) {
 				staleDuplicates.push(key);
 			}
@@ -425,7 +425,7 @@ async function classifyKeysForFavicon(keys, keyOrigins, byOrigin, byOriginPath, 
 			privilegedErrors.push({key: storeKey, favIconUrl, srcId});
 			continue;
 		}
-		// Privileged keys capture and failures become error sentinels
+		// Privileged keys capture like any other key
 		if (stored && !storedPoisoned && !stored.provider && stored.dataUrl !== genericDataUrl && stored.srcId === srcId) continue;
 		let group = byFavIconUrl.get(favIconUrl);
 		if (!group) {
@@ -507,12 +507,12 @@ async function prefetchFavicons() {
 	}
 }
 
-// The native filter avoids waking the event page for unrelated tab updates. onCreated is redundant, and onActivated carries no favicon signal
+// Native filter skips unrelated updates, onCreated and onActivated carry no favicon signal
 browser.tabs.onUpdated.addListener(
 	(_id, changeInfo, tab) => {
 		// Ignore blank tabs because they have no bookmark favicon signal
 		if (BookmarkCache.isBlankNewTab(tab)) return;
-		// Only a URL or favicon change moves the maps; a status change cannot
+		// Only URL and favicon changes move the maps, a status change cannot
 		if ('url' in changeInfo || 'favIconUrl' in changeInfo) cachedFaviconMaps = null;
 		schedulePrefetch();
 	},

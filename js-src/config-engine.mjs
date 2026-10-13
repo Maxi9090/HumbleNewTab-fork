@@ -54,7 +54,7 @@ const config = {
 	css: '',
 };
 
-// The active theme is loaded from themes.mjs
+// Active theme, assigned by applyTheme
 let theme = {};
 
 // Cache values to avoid repeated localStorage reads during rendering
@@ -93,7 +93,7 @@ function hasStaticDefault(key) {
 	return key !== 'theme' && !(key in theme);
 }
 
-// Whether the stored state differs from the default; an adaptive key counts while an explicit value exists
+// Whether the stored state differs from the default, adaptive keys count while an explicit value exists
 function hasConfigOverride(key) {
 	const stored = localStorage.getItem(`options.${key}`);
 	if (stored == null) return false;
@@ -102,7 +102,7 @@ function hasConfigOverride(key) {
 	return coerceConfigValue(key, stored) !== config[key];
 }
 
-// Keep storage and style updates here. Listeners handle other side effects
+// Storage and style updates stay here, listeners handle other side effects
 function setConfig(key, value) {
 	configCache.delete(key);
 

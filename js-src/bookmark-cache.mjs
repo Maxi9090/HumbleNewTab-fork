@@ -1,4 +1,4 @@
-/* localStorage-backed bookmark cache for folders, special folders, and favicons */
+/* localStorage-backed bookmark tree and favicon cache shared by page and background */
 
 const RECENT_DEFAULT_LIMIT = 15;
 const RECENT_MAX_LIMIT = 50;
@@ -10,7 +10,7 @@ function lazyUrlParts() {
 	return info;
 }
 
-// One shared accessor: a per-link defineProperty cost a native call and a descriptor object on every flatten
+// One shared accessor, cheaper than defining the property per link
 const LINK_ENTRY_PROTO = {};
 Object.defineProperty(LINK_ENTRY_PROTO, 'urlParts', {configurable: true, get: lazyUrlParts});
 
@@ -20,7 +20,7 @@ const SVG_URL_RE = /^https?:\/\/[^?#]*\.svg(?:[?#]|$)/i;
 const FINGERPRINT_RE = /^[0-9a-f]{32}$/;
 
 const BookmarkCache = {
-	// Cache records live under this namespace so clear() never touches the extension's other keys
+	// Namespace so clear() never touches other extension keys
 	KEY_PREFIX: 'bm:',
 
 	_allDataCache: null, // Keep an in-memory mirror of non-favicon records
@@ -133,47 +133,47 @@ const BookmarkCache = {
 		} catch {
 			info = {origin: null, key: null};
 		}
-		// Never evict: an eviction marks the entry removed and fixes up live iterators, which churns the engine's ordered table for the sake of one URL parse
+		// Never evict, a Map delete churns the engine's ordered table for one URL parse
 		cache.set(urlStr, info);
 		return info;
 	},
 
-	// Stored records cannot carry the accessor, so a walk that needs URL parts installs it on first read
+	// Stored records carry no accessor, so a walk installs it on first read
 	urlPartsFor(child) {
 		Object.defineProperty(child, 'urlParts', {configurable: true, get: lazyUrlParts});
 		return child.urlParts;
 	},
 
-	// Capture image, luma class, pixel identity, and source token in one pass. The token replaces storing the source data URL anywhere in the store
+	// Capture image, luma class, pixel identity, and source token in one pass
 	async captureFaviconResult(source, img) {
 		const srcId = await this.digestString(source);
 		if (this.isVectorSource(source)) {
-			// Vectors stay vector. Only data-URI SVGs are readable, so only they can carry a conflict signal
+			// Vectors stay vector, only data-URI SVGs are readable for luma
 			return {dataUrl: source, hash: srcId, srcId, lumaClass: this.classifyDataUriSvg(source, img)};
 		}
 		const {canvas, pixels} = this._rasterize(img);
 		const lumaClass = this.faviconClassFromPixels(pixels);
-		// The digest is over the captured pixels, not the stored bytes, so the identity survives format conversion
+		// Digest the pixels, not the stored bytes, so identity survives format conversion
 		const hash = await this.digestToHex(pixels);
-		// Lossless WebP competes with PNG, keep the smaller data URL. Ties keep WebP. The identity is pixel-based, so the winning format cannot split rows
+		// Lossless WebP competes with PNG, keep the smaller one, ties keep WebP
 		const webp = await this._canvasWebpDataUrl(canvas);
 		const png = canvas.toDataURL('image/png');
 		const image = webp && webp.length <= png.length ? webp : png;
 		return {dataUrl: image, hash, srcId, lumaClass};
 	},
 
-	// Data-URI SVGs render in-process without tainting, so a raster copy can classify them. https SVGs stay unreadable
+	// Data-URI SVGs can classify from a raster copy, https SVGs are unreadable
 	classifyDataUriSvg(source, img) {
 		if (!SVG_DATA_RE.test(source)) return null;
 		try {
 			return this.faviconClassFromPixels(this._rasterize(img).pixels);
 		} catch {
-			// A failed raster readback leaves the vector unclassified
+			// Failed readback leaves the vector unclassified
 			return null;
 		}
 	},
 
-	// Draw the loaded image scaled into a canvas and read its pixels. Canvas access can throw on taint
+	// Scale the image into a canvas and read pixels, tainted access throws
 	_rasterize(img) {
 		const canvas = document.createElement('canvas');
 		const w = img.naturalWidth || 16;
@@ -214,7 +214,7 @@ const BookmarkCache = {
 	// Same-origin SVG cannot taint, so a raw URL fallback is unnecessary
 	GENERIC_ICON_URL: 'icons/page.svg',
 	_genericIconDataUrlPromise: null,
-	// One placeholder image per context, so the capture is memoized and every caller reuses the first result
+	// One placeholder per context, callers reuse the first capture
 	getGenericIconDataUrl() {
 		if (!this._genericIconDataUrlPromise) {
 			this._genericIconDataUrlPromise = new Promise((resolve) => {
@@ -262,13 +262,13 @@ const BookmarkCache = {
 		return this.digestToHex(new TextEncoder().encode(text));
 	},
 
-	// Vector sources pass through instead of rasterizing: data: SVG carries its own bytes, and a .svg URL is expected to be a vector too
+	// Vector sources pass through instead of rasterizing
 	isVectorSource(url) {
 		const u = this.normalizeFaviconUrl(String(url));
 		return SVG_DATA_RE.test(u) || SVG_URL_RE.test(u);
 	},
 
-	// Quality 1 encodes lossless WebP: lossy compression adds noise that can inflate sparse icons
+	// Quality 1 encodes lossless, lossy WebP noise can inflate sparse icons
 	async _canvasWebpDataUrl(canvas) {
 		try {
 			const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', 1));
@@ -357,8 +357,7 @@ const BookmarkCache = {
 		}
 	},
 
-	// The tree record expands into folder records. Every other record lands as-is
-	// Callers that just built the tree pass their folderRecords so it is not decoded and flattened twice
+	// Tree records expand into folder records, callers with fresh folder records skip the decode
 	async _applyRecordToMirror(cache, record, folderRecords = null) {
 		if (record.key === 'tree' && record.tree) {
 			let records = folderRecords;
@@ -376,7 +375,7 @@ const BookmarkCache = {
 		}
 	},
 
-	// Exclude favicon records so the bookmark mirror stays small. The tree record expands into folder records
+	// Exclude favicon records so the bookmark mirror stays small
 	async loadAllData(force = false) {
 		if (!force && this._allDataCache) return this._allDataCache;
 
@@ -404,7 +403,7 @@ const BookmarkCache = {
 
 	async put(key, value) {
 		this.safeSetItem(this._storageKey(key), JSON.stringify(value));
-		// Keep favicon rows out of the bookmark mirror. The mirror carries the key, storage does not
+		// Keep favicon rows out of the bookmark mirror
 		if (this._allDataCache && !key.startsWith('fi:')) {
 			this._allDataCache.set(key, {...value, key});
 		}
@@ -445,7 +444,7 @@ const BookmarkCache = {
 		this._faviconCache = new Map();
 	},
 
-	// No storage handle exists. Kept as a deliberate test-only API
+	// Deliberate test-only API, no storage handle exists
 	close() {},
 
 	// Reset runtime state between tests
@@ -460,8 +459,7 @@ const BookmarkCache = {
 		this._ownUrlPrefix = null;
 	},
 
-	// Derive URL parts here, lazily and off the record's own shape: every later walk reads them instead of re-parsing, and nothing persisted can carry them
-	// In-place decode: links and child arrays are reused
+	// Flatten in place and derive URL parts lazily, so later walks never re-parse
 	flattenTree(tree, inPlace = false) {
 		const records = [];
 
@@ -529,7 +527,7 @@ const BookmarkCache = {
 		return (h >>> 0).toString(36);
 	},
 
-	// Verify the records a hash match was computed from, so a record edited outside this extension is rewritten instead of trusted
+	// Verify the records behind a hash match, so external edits are rewritten, not trusted
 	async storedCacheIntact() {
 		const syncRecord = await this.getStored('meta:lastSync');
 		if (typeof syncRecord?.value !== 'number') return false;
@@ -541,19 +539,19 @@ const BookmarkCache = {
 	async fullSync() {
 		const tree = await browser.bookmarks.getTree();
 
-		// The API tree flattens directly. The nested form is only needed for the stored record
+		// Flatten the API tree directly, the nested form is only for the stored record
 		const folderRecords = this.flattenTree(tree.length > 0 ? tree : [{id: '0', title: '', children: []}]);
 		// Match the Content input: 15 by default and 50 maximum
 		const raw = Number(localStorage.getItem('options.number_recent'));
 		const recentLimit = raw > 0 ? Math.min(raw, RECENT_MAX_LIMIT) : RECENT_DEFAULT_LIMIT;
 		const recentBookmarks = this.extractRecentBookmarks(tree, recentLimit);
-		// The record is sync-owned and stays deleted while the folder is disabled. Default is enabled
+		// Sync-owned record, stays deleted while the folder is disabled, default enabled
 		const showRecent = localStorage.getItem('options.show_recent');
 		const recentEnabled = showRecent == null || Number(showRecent) !== 0;
 
 		const hash = this.computeSyncHash(folderRecords, recentBookmarks);
 		const storedHashRecord = await this.getStored('meta:hash');
-		// A matching hash only says the live tree is unchanged, so the stored records are verified too before the write is skipped
+		// A hash match only covers the live tree, so the stored records are verified too
 		if (storedHashRecord?.value === hash && (await this.storedCacheIntact())) {
 			if (recentEnabled) await this.reconcileRecentCache(recentLimit, recentBookmarks);
 			return folderRecords.length;
@@ -618,7 +616,7 @@ const BookmarkCache = {
 					dateAdded: node.dateAdded,
 				};
 				let i = top.length;
-				// Equal timestamps keep collection order, matching the previous stable sort
+				// Equal timestamps keep collection order, matching a stable sort
 				while (i > 0 && top[i - 1].dateAdded < entry.dateAdded) i--;
 				if (i < limit) {
 					top.splice(i, 0, entry);
@@ -650,7 +648,7 @@ const BookmarkCache = {
 		};
 	},
 
-	// An untagged view decides freshness instead of a TTL. One view per site rebuilds from the rows, keeping paint and background skip checks per-site
+	// One view per site rebuilt from the rows, freshness comes from trust tags, not a TTL
 	async loadFavicons(force = false) {
 		if (!force && this._faviconCache) return this._faviconCache;
 		if (this._faviconPromise) return this._faviconPromise;
@@ -708,8 +706,7 @@ const BookmarkCache = {
 			row.sites.push(e.origin);
 			row.sources.set(e.origin, e.srcId ?? null);
 		}
-		// Revoke every stored membership in one pass:
-		// another context may have a newer row index, and revoking per row walked and parsed the whole favicon store once per written row
+		// Revoke memberships in one pass, per-row revocation walked and parsed the whole favicon store
 		const revoked = [];
 		for (const row of rows.values()) {
 			for (let i = 0, len = row.sites.length; i < len; i++) revoked.push(row.sites[i]);
@@ -763,15 +760,14 @@ const BookmarkCache = {
 		}
 	},
 
-	// Strip site memberships across rows. Deletion heals by fall-through to the origin default on read
+	// Strip memberships across rows, deletion heals by origin default fall-through
 	removeFaviconSites(sites) {
 		if (sites.length === 0) return;
 		const remove = new Set(sites);
 		this._sweepFaviconRows((site) => !remove.has(site), false);
 	},
 
-	// One pass over the favicon rows: drop rows whose site is gone and strip dead memberships in place.
-	// The sync reclaim and every revocation share it so no caller parses the store twice
+	// One pass drops dead rows and strips dead memberships, shared by reclaim and revocation
 	_sweepFaviconRows(isLive, dropMalformed) {
 		const rowPrefix = this.KEY_PREFIX + 'fi:';
 		const keys = this._collectCacheKeys('favicon');
@@ -783,7 +779,7 @@ const BookmarkCache = {
 				if (dropMalformed) localStorage.removeItem(storageKey);
 				continue;
 			}
-			// Per-site rows carry their sentinel under the site key; a digest-keyed row without an image is dead
+			// Sentinel rows live under the site key, digest rows without an image are dead
 			if (stored.provider === 'error' && !stored.image) {
 				if (this.isFingerprint(sub)) {
 					if (dropMalformed) localStorage.removeItem(storageKey);

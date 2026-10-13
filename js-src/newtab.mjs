@@ -8,7 +8,7 @@ const TAB_OPEN_MODE = Object.freeze({
 	BACKGROUND: 2,
 });
 
-// Tell the background a page is booting so it keeps its work off this boot, and off the close that preceded it
+// Tell the background a page is booting, so its work stays clear of this boot and the close before it
 browser.runtime.sendMessage({type: 'newtab-booting'}).catch(() => {});
 
 // Defer rendering while the page is hidden or busy
@@ -46,7 +46,7 @@ function setDetailsMenuActive(value) {
 
 function setMenuActive(a) {
 	a.classList.add('menu-active');
-	// The native menu consumes its own dismissal, so the highlight clears on the first Escape or pointer event the page sees
+	// The native menu consumes its own dismissal, so the first Escape or pointer event clears the highlight
 	const remove = () => {
 		a.classList.remove('menu-active');
 		document.removeEventListener('mousedown', remove, true);
@@ -127,7 +127,7 @@ function setUiBusy(value) {
 function readSpecialFolderCache(id, limit) {
 	try {
 		const parsed = JSON.parse(localStorage.getItem(`cache.${id}`));
-		// A record written with a higher limit serves smaller ones. Below it falls to the live path
+		// A record with a higher limit serves smaller ones, otherwise the live path takes over
 		if (!parsed || !Array.isArray(parsed.data) || parsed.limit < limit) return null;
 		return parsed.data.slice(0, limit);
 	} catch {
@@ -214,7 +214,7 @@ const SpecialFolders = {
 			const item = data[i];
 			result[i] = {
 				...item,
-				// Windows have no URL to resolve; the class drives the window.svg mask
+				// Windows have no URL to resolve, the class drives the window.svg mask
 				className: item.isWindow ? 'window' : '',
 				action: () => {
 					void (async () => {
@@ -601,7 +601,7 @@ function closeMenu(ul) {
 	setTimeout(() => ul.remove(), getConfig('fade') * 1000);
 }
 
-// Native menus dismiss on the next interaction, so one permanent listener set replaces per-menu document handlers
+// Native menus dismiss on the next interaction, so one permanent listener set replaces per-menu handlers
 const dismissMenu = () => {
 	if (currentMenu) closeMenu(currentMenu);
 };
@@ -1048,7 +1048,7 @@ async function loadColumns(forceReload = false) {
 
 	// Check cache validity through the in-memory mirror
 	const status = await BookmarkCache.getCacheStatus();
-	// A tree record that did not expand leaves no folder records, and rendering that would remove every folder row from the saved layout
+	// No expanded tree means no folder records, rendering that would prune every folder row
 	const treeUsable = BookmarkCache.treeUsable();
 	if (!status.valid || !treeUsable) {
 		console.error('[BookmarkCache] Cache not valid:', status, {treeUsable});
@@ -1390,7 +1390,7 @@ function handleConfigChange(key, value) {
 }
 addConfigChangeListener(handleConfigChange);
 
-// Import applies toggle semantics: enabled-to-enabled untouched, off-to-on reinstates fresh, on-to-off wipes records
+// Import applies toggle semantics: enabled stays, off-to-on reinstates fresh, on-to-off wipes records
 function captureSpecialShowState() {
 	return Object.fromEntries(SpecialFolders.all.map((id) => [id, !!getConfig(`show_${id}`)]));
 }

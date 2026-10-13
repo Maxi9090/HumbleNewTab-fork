@@ -8,7 +8,7 @@ let openTabsByOriginPath = null;
 
 let openTabsFaviconMapPromise = null;
 
-// Ask the background first: it builds the maps in this process and reuses them across page boots, while listing tabs here costs a parent round trip
+// Ask the background first, it reuses one map build while a local tabs.query costs a parent round trip
 async function resolveOpenTabsFaviconMaps() {
 	try {
 		const maps = await browser.runtime.sendMessage({type: 'favicons-request'});
@@ -53,9 +53,7 @@ function getOpenTabsFaviconFor(pageUrl) {
 	return openTabsByOrigin.get(origin) || null;
 }
 
-// Share capture logic through BookmarkCache
-
-// Keep a capture in the session mirror so a later render paints it without a second capture. The background prefetch owns persistence
+// Record the capture in the session mirror, the background owns persistence
 function rememberFaviconView(viewKey, capture, provider) {
 	BookmarkCache._faviconCache?.set(viewKey, {dataUrl: capture.dataUrl, provider: provider ?? null, srcId: capture.srcId, lumaClass: capture.lumaClass ?? null});
 }
@@ -305,7 +303,7 @@ async function walkFaviconRefreshLinks() {
 		}
 
 		const privilegedKey = BookmarkCache.isPrivilegedScheme(href);
-		// Reject privileged favicon URLs on web keys to avoid poisoning the cache, but never replace a real favicon with the placeholder
+		// Reject privileged favicon URLs on web keys, never replacing a real favicon with the placeholder
 		if (BookmarkCache.isPrivilegedScheme(faviconUrl) && !privilegedKey) {
 			if (!a.classList.contains('favicon-unmasked')) setFaviconError(a);
 			continue;

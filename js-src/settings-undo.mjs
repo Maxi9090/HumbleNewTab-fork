@@ -75,7 +75,7 @@ function recordLayoutChange(op) {
 	storeUndoRecord(record);
 }
 
-// Create the panel's revert arrow; the caller places it and wires the click
+// Caller places and wires the returned revert arrow
 function createUndoArrow() {
 	undoArrow = document.createElement('a');
 	undoArrow.className = 'revert';
@@ -100,7 +100,7 @@ async function requestShowPermissions(optionKeys) {
 	}
 }
 
-// Apply the recorded values to storage and config; false when there was nothing to consume
+// Apply the recorded values to storage and config, false when nothing was consumed
 async function revertLastChange() {
 	let record = null;
 	try {

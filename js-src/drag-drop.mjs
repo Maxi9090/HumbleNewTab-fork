@@ -160,7 +160,7 @@ function collectCandidates(e) {
 				const isNoOpSingle = isSingle && src && src.x === i;
 				const noOpAbove = isNoOpSingle || (src && src.x === i && (src.y === j - 1 || src.y === j));
 				const noOpBelow = isNoOpSingle || (src && src.x === i && (src.y === j || src.y === j + 1));
-				// Measure below an open folder at the subtree bottom
+				// An open folder's subtree bottom is the real drop edge
 				const liRect = li.getBoundingClientRect();
 				const belowY = linkEl.classList.contains('open') && liRect.bottom > r.bottom ? liRect.bottom : r.bottom;
 				cs.push({
@@ -258,7 +258,7 @@ let dragSrcEl = null;
 function handleDragStart(e) {
 	const main = hooks.getMainElement();
 	const folderLink = e.target.closest('a.folder');
-	// Row drags resolve before the lock gate: locked layouts keep native link dragging
+	// Bookmark rows keep native link dragging, folder drags are gated below
 	if (!folderLink) {
 		const item = e.target.closest('li');
 		if (item && main.contains(item)) return;
