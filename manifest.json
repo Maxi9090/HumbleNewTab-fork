@@ -1,6 +1,6 @@
 {
 	"name": "HumbleNewTab-fork",
-	"version": "1.47.17",
+	"version": "1.48.0",
 	"manifest_version": 3,
 	"description": "A minimal new tab page featuring your bookmarks, most visited, and recently closed in a customizable layout.",
 	"icons": {
