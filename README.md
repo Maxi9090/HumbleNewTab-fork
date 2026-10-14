@@ -1,36 +1,36 @@
 <h2><img src='https://github.com/Maxi9090/HumbleNewTab-fork/raw/refs/heads/main/icons/logo.svg' height='30' alt=''> Humble New Tab - fork</h2>
 
-A Firefox-only fork of [Humble New Tab Page](https://github.com/ibillingsley/HumbleNewTabPage) focused on instant loading, local-only favicons, and quality of life improvements. Same layout, fully offline, completely rewritten internals.
+A Firefox-only fork of [Humble New Tab Page](https://github.com/ibillingsley/HumbleNewTabPage) focused on instant loading, local-only favicons, and quality-of-life improvements. Same layout, fully offline, completely rewritten internals.
 
 > [!NOTE]
-> Requires Firefox 121 or later.
+> Requires desktop Firefox 121 or later.
 
-## How it differs
+## How this fork differs
 
-- **Speed.** The original was built for Chrome, where extension API calls are cheap. On Firefox, those same calls cross a process boundary, so every new tab waited on a long chain of API round-trips with a sustained CPU spike while the page assembled itself from scratch. This fork:
-  - adds a background page and moves that work there, so the page renders from data that is already available.
-  - reads the full bookmark tree once, keeps it up to date in the background, and renders from a stored copy, so opening a new tab does no bookmark API call at all and is effectively instant (the original read the tree on every load, and called the bookmarks API again the first time you opened a folder).
-  - does no capture or fetch for the icons it already has stored, so a new tab renders them immediately (the original pointed every row at a provider URL, so icons came from the network on every load).
-  - caches "Most visited", "Recent bookmarks", "Recently closed tabs", and "Recently closed windows", so they appear instantly (the original called the matching browser API each time those folders rendered).
-  - builds bookmark rows in one batch, with no image element per row (the original created an element per row icon).
-  - compiles every setting into a single stylesheet (the original created one style element per setting).
-  - skips work that would change nothing: it writes only when the stored content changed, and re-renders only when the bookmark tree changed.
-  - loads the options panel and the drag and drop code only when used.
-  - has many more smaller performance improvements that together add up.
-- **Favicons.** The original sets each favicon domain to its `.ico` path, or fetches favicons from third-party providers (DuckDuckGo, Ecosia, Google, Icon Horse, Yandex). All of these options are unreliable, and the providers send your bookmarked domains to those services. This fork:
-  - never contacts the internet for favicons.
-  - reads favicons only from your open tabs.
-  - captures favicons fully in the background. Opening a bookmarked site in any way is enough to get its favicon, and the extension's new tab page does not need to be open.
-  - stores favicons locally so they survive restarts and are already there on the next new tab.
-  - uses different icons per path on the same origin (Google Docs and Sheets, Google Maps and Search, for example), each resolving to the correct one.
-  - automatically inverts pure white favicons in light theme and pitch black favicons in dark theme, no more invisible favicons.
-  - unfortunately can't get bookmark favicons the way Chrome extensions can, so this favicon workaround is the best we can do.
+- **Speed:**
+  - Background page does most of the hard work, and the new tab page renders from data that is optimally served.
+  - Bookmark tree is cached and kept up to date in the background. Opening a new tab makes no bookmark API call, which is slow.
+  - Doesn't fetch or capture favicons it already stored. It only renders them from storage, which is fast.
+  - Caches "Most visited", "Recent bookmarks", "Recently closed tabs", and "Recently closed windows", so they appear instantly.
+  - Bookmark rows are built in one batch, with no separate image element per row.
+  - Every setting compiles into a single stylesheet.
+  - Writes only on real content change, re-renders only when the bookmark tree changes.
+  - Options panel loads only when clicked.
+  - The drag-drop code loads only after the initial render. When "Lock columns" is enabled, drag-drop is never loaded.
+  - Plus many more smaller performance improvements that together add up.
+- **Favicons:**
+  - Never contacts the internet for favicons. Reads favicons only from your open tabs.
+  - Favicon capture runs fully in the background. Opening a bookmarked site in any way is enough to get its favicon, and the extension's new tab page does not need to be open.
+  - Favicons stored locally, so they survive restarts and are ready on the next new tab.
+  - Uses different icons per path on the same origin (Google Docs and Sheets, Google Maps and Search), each resolving to the correct one.
+  - Automatically inverts near-white favicons in light theme and near-black favicons in dark theme, no more invisible favicons.
+  - Firefox can't get bookmark favicons the way Chrome extensions can. So this tab capture is the best available workaround.
 - **Real-time preview:**
-  - Changes made in the bookmarks (Library) appear in an already open new tab page without reloading, and "Recent bookmarks" refreshes the same way.
-  - There is no polling or scheduled sync. The listeners fire only on actual changes.
-  - All sliders update in real-time as you drag them.
-  - The theme can follow your browser's light or dark preference in real-time.
-  - "Recently closed tabs" and "Recently closed windows" update as you close tabs or windows, as you restore an entry from them, and as you remove entries in Firefox View (`about:firefoxview`).
+  - Bookmark changes in the Library appear in an open new tab page without a reload, and "Recent bookmarks" refreshes the same way.
+  - No polling, no scheduled sync. Listeners fire only on actual changes.
+  - Sliders update in real-time while dragging.
+  - The theme can follow your browser's light or dark preference.
+  - "Recently closed tabs" and "Recently closed windows" update on tab or window close, on restore, and on removal in Firefox View (`about:firefoxview`).
 - **Drag and drop UX:**
   - Made harder to move unintentionally, thanks to small drop zones and spatial thresholds.
   - Releasing in dead space does nothing.
@@ -38,22 +38,22 @@ A Firefox-only fork of [Humble New Tab Page](https://github.com/ibillingsley/Hum
   - Moving close enough to a line shows it at full opacity and allows dropping.
   - Drag a strayed subfolder back into its parent folder and it re-nests.
 - **Refined UI:**
-  - Adaptive by default, following your browser preference until you pick a theme.
-  - All elements, including the options panel, context menu, and form controls, theme consistently in Light and Dark modes.
+  - Adaptive by default, following the browser preference until you pick a theme.
+  - All elements, including the options panel, context menu, and form controls, have consistent colors for Light and Dark modes.
   - Options panel restructured and polished: reorganized sidebar buttons, hover effects on every element, nicer color swatches, and more.
-  - Replaced the PNG icons with SVG icons that: inherit the active theme's text color, stay sharp at any DPI/zoom level, are smaller in file size, and load faster.
-  - Improved readability for the generated CSS and the JSON settings export.
+  - SVG icons instead of PNG: inherit the theme's text color, stay sharp at any DPI/zoom, smaller, faster to load.
+  - Improved readability for the generated CSS and the export settings text boxes.
 - **Reworked sliders:**
-  - Every slider has a synced number input for typing exact values.
-  - Every slider's value is the exact CSS value and unit (`em`, `%`, `s`, `px`) instead of an abstract position.
+  - Every slider has a synced number input for exact values.
+  - Slider values are the exact CSS value and unit (`em`, `%`, `s`, `px`), not an abstract position.
   - Every slider spans the full panel width.
-  - Font size and font weight became sliders.
-- **Privileged URL handling.** Firefox blocks extension navigation to `about:`, `chrome://`, `resource://`, and `file:///` URLs. Clicking such a bookmark copies the URL to the clipboard with a toast, instead of doing nothing.
+  - Font size and font weight are sliders.
+- **Privileged URLs:** Firefox blocks extension navigation to `about:`, `chrome://`, `resource://`, and `file:///` URLs. Clicking such a bookmark copies the URL to the clipboard and shows a toast.
 - **Removed:**
   - The 12 named color themes.
   - Background image URL input.
   - Third-party favicon providers and their selector UI.
-  - Browser homepage override from first install.
+  - Browser homepage override on first install.
   - The "Scale with window size" option (bad UX).
   - Chrome-only manifest keys and APIs the upstream Chrome build ("Apps" folder, "Other devices" folder, `fontSettings`, `favicon`, `optional_host_permissions` for `file:///*`) and TBP-Fork (`service_worker`, `alarms`) carried.
 
@@ -61,23 +61,23 @@ A Firefox-only fork of [Humble New Tab Page](https://github.com/ibillingsley/Hum
 
 - "Most visited" (`topSites`) and both "Recently closed" folders (`sessions`) are now optional permissions.
 - New tab entries in "Recently closed tabs" are pruned, so closing new tabs does not pollute the list.
-- "Open all links in folder" appears only when right-clicking the folder itself, and asks for confirmation before opening.
+- "Open all links in folder" appears only when right-clicking the folder itself, and asks for confirmation first.
 - Import overrides settings instead of appending them.
 - Refined some of the default settings.
 - Added "Hide scrollbar" and "Remember scroll position" options.
 - Added "Restore closed windows", so closed windows get their own folder instead of mixing into "Recently closed tabs".
 - Added zoom and image scrolling for the background image feature.
-- Icons in the layout now scales when adjusting font size.
-- Added a text outline option for better visibility with certain background images/colors.
-- Folder animation no longer overlaps.
-- Added "Dynamic height animation", which switches the folder animation to a constant speed when off.
-- The highlight effect stays active while the "Details" menu is open, so you can adjust while seeing it.
-- Added undo button to import settings which reverts the last change of any settings, but only the last change is recorded.
+- Icons in the layout now scale when adjusting font size.
+- Added a text outline option for better visibility over certain background images or colors.
+- Folder animations no longer overlap.
+- Added a "Dynamic height animation" option, which switches the folder animation to a constant speed when off.
+- The highlight effect stays active while the "Details" menu is open, so you can adjust it while seeing it.
+- Added an undo feature (in import settings) which reverts the last change of any setting, but only one step is recorded.
 - Failed and privileged-URL favicons get their own placeholder icons.
-- Added a "Navigate to latest new tab" shortcut (in `about:addons` → ⚙️ → Manage Extension Shortcuts) that goes to the most recently used new tab page if one is open, otherwise opens a fresh one.
+- Added a "Navigate to latest new tab" shortcut (in `about:addons` → ⚙️ → Manage Extension Shortcuts). It goes to the most recently used new tab page if one is open, otherwise opens a fresh one.
 - Fixed new tab missing its favicon.
 - Improved keyboard navigation.
-- Added error pages for storage full and bookmarks/cache errors.
+- Error pages for storage full and bookmarks/cache errors.
 - Many additional backend improvements: legacy and dead code removal, internal refactoring, and modernization throughout the codebase.
 
 ## Install
@@ -113,6 +113,7 @@ js-dist
 ├── drag-drop.bundle.mjs
 ├── newtab.bundle.mjs
 ├── settings-ui.bundle.mjs
+├── settings-undo.bundle.mjs
 └── shared-bundle.mjs
 newtab.min.css
 ```
