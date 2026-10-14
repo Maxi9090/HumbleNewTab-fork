@@ -9,13 +9,13 @@ A Firefox-only fork of [Humble New Tab Page](https://github.com/ibillingsley/Hum
 
 - **Speed:**
   - Background page does most of the hard work, and the new tab page renders from data that is already stored.
-  - Bookmark tree is cached and kept up to date in the background. Opening a new tab makes no bookmark API call, which is slow.
-  - Doesn't fetch or capture favicons it already stored. It only renders them from storage, which is fast.
+  - Bookmark tree is cached and kept up to date in the background. Opening a new tab makes no bookmark API call.
+  - Doesn't fetch or capture favicons it already stored. It only renders them from storage.
   - Caches "Most visited", "Recent bookmarks", "Recently closed tabs", and "Recently closed windows", so they appear instantly.
   - Bookmark rows are built in one batch, with no separate image element per row.
   - Every setting compiles into a single stylesheet.
   - Writes only on real content change, re-renders only when the bookmark tree changes.
-  - Options panel loads only when clicked.
+  - The options panel code loads only when clicked.
   - The drag-drop code loads only after the initial render. When "Lock columns" is enabled, drag-drop is never loaded.
   - Plus many more smaller performance improvements that together add up.
 - **Favicons:**
@@ -24,7 +24,7 @@ A Firefox-only fork of [Humble New Tab Page](https://github.com/ibillingsley/Hum
   - Favicons stored locally, so they survive restarts and are ready on the next new tab.
   - Uses different icons per path on the same origin (Google Docs and Sheets, Google Maps and Search), each resolving to the correct one.
   - Automatically inverts near-white favicons in light theme and near-black favicons in dark theme, no more invisible favicons.
-  - Firefox can't get bookmark favicons the way Chrome extensions can. So this tab capture is the best available workaround.
+  - Firefox can't get bookmark favicons the way Chrome extensions can. So this tab capture is the best workaround.
 - **Real-time preview:**
   - Bookmark changes in the Library appear in an open new tab page without a reload, and "Recent bookmarks" refreshes the same way.
   - No polling, no scheduled sync. Listeners fire only on actual changes.
