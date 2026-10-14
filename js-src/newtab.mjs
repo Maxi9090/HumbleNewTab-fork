@@ -357,7 +357,7 @@ function render(node, target, readyTasks = null) {
 				deferredFolderLinks.push(a);
 				const cached = readSpecialFolderCache(id, getConfig(SpecialFolders.defs[id].configKey));
 				if (cached) {
-					const painted = id === 'closed' ? SpecialFolders._hydrateClosed(cached) : cached;
+					const painted = id === 'closed' || id === 'windows' ? SpecialFolders._hydrateClosed(cached) : cached;
 					a._cachedPainted = painted;
 					const childList = renderAll(painted, li, false, false);
 					readyTasks?.push(childList._renderReady);
