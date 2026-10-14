@@ -89,7 +89,7 @@ A Firefox-only fork of [Humble New Tab Page](https://github.com/ibillingsley/Hum
 
 The extension in this repository runs directly from source (`js-src/*.mjs` and `newtab.css`), no build step is required to load or test it.
 
-Load as a temporary add-on via `about:debugging#/runtime/this-firefox` by selecting `manifest.json`, or run `web-ext run --source-dir .` ([web-ext](https://extensionworkshop.com/documentation/develop/getting-started-with-web-ext/)).
+Load as a temporary extension via `about:debugging#/runtime/this-firefox` by selecting `manifest.json`, or run `web-ext run --source-dir .` ([web-ext](https://extensionworkshop.com/documentation/develop/getting-started-with-web-ext/)).
 
 > [!TIP]
 > Add `:root {--tabpanel-background-color: YOUR_COLOR_HERE !important;}` in your `userChrome.css` with your background color to fix flicker caused by `about:blank` having a different color.
