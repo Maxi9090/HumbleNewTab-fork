@@ -8,7 +8,7 @@ A Firefox-only fork of [Humble New Tab Page](https://github.com/ibillingsley/Hum
 ## How this fork differs
 
 - **Speed:**
-  - Background page does most of the hard work, and the new tab page renders from data that is optimally served.
+  - Background page does most of the hard work, and the new tab page renders from data that is already stored.
   - Bookmark tree is cached and kept up to date in the background. Opening a new tab makes no bookmark API call, which is slow.
   - Doesn't fetch or capture favicons it already stored. It only renders them from storage, which is fast.
   - Caches "Most visited", "Recent bookmarks", "Recently closed tabs", and "Recently closed windows", so they appear instantly.
