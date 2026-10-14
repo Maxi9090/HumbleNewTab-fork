@@ -13,18 +13,19 @@ const distOutputs = [
 	'newtab.bundle.mjs',
 	'settings-ui.bundle.mjs',
 	'drag-drop.bundle.mjs',
+	'settings-undo.bundle.mjs',
 	'background.bundle.mjs',
 	'shared-bundle.mjs', //
 ];
 await mkdir(distDir, {recursive: true});
 for (const f of distOutputs) await rm(path.join(distDir, f), {force: true});
 for (const f of await readdir(distDir)) {
-	if (/^chunk-[A-Z0-9]+\.mjs$/.test(f)) await rm(path.join(distDir, f), {force: true});
+	if (/^chunk-[A-Z0-9]+\.mjs$/.test(f) || /^shared\d+\.mjs$/.test(f)) await rm(path.join(distDir, f), {force: true});
 }
 await rm(path.join(here, 'newtab.min.css'), {force: true});
 
 // Share hot modules so the page and lazy chunks use one BookmarkCache and config-engine instance.
-// Keep shared-bundle.mjs external to avoid duplicating those singletons.
+// The shared chunks stay external in the rebuild passes below so those singletons cannot split.
 const result = await esbuild.build({
 	entryPoints: [path.join(srcDir, 'newtab.mjs')],
 	bundle: true,
@@ -45,7 +46,8 @@ const result = await esbuild.build({
 	write: false,
 });
 
-// Rename chunks to stable source-based names and leave the entry name unchanged
+// Rename chunks to stable source-based names and leave the entry name unchanged.
+// Names come from chunk inputs, never output order: the hot-modules chunk must keep the shared-bundle.mjs name.
 const renameMap = new Map();
 let sharedIndex = 0;
 for (const [outPath, out] of Object.entries(result.metafile.outputs)) {
@@ -55,9 +57,18 @@ for (const [outPath, out] of Object.entries(result.metafile.outputs)) {
 	let newName;
 	if (ends(/js-src\/settings-ui\.mjs$/)) newName = 'settings-ui.bundle.mjs';
 	else if (ends(/js-src\/drag-drop\.mjs$/)) newName = 'drag-drop.bundle.mjs';
-	else newName = sharedIndex++ === 0 ? 'shared-bundle.mjs' : `shared${sharedIndex}.mjs`;
+	else if (ends(/js-src\/bookmark-cache\.mjs$/)) newName = 'shared-bundle.mjs';
+	else if (ends(/js-src\/settings-undo\.mjs$/)) newName = 'settings-undo.bundle.mjs';
+	else newName = `shared${++sharedIndex}.mjs`;
 	renameMap.set(path.basename(outPath), newName);
 }
+
+const lazyNames = ['settings-ui.bundle.mjs', 'drag-drop.bundle.mjs'];
+const sharedExternals = [];
+for (const name of new Set(renameMap.values())) {
+	if (!lazyNames.includes(name)) sharedExternals.push(`./${name}`);
+}
+const lazyExternals = lazyNames.map((name) => `./${name}`);
 
 for (const out of result.outputFiles) {
 	let text = out.text;
@@ -76,7 +87,7 @@ for (const out of result.outputFiles) {
 }
 
 // Keep only the binding used from each dynamically imported chunk.
-// Rebuild with shared-bundle.mjs external to remove dead declarations.
+// Rebuild with every shared chunk external so no hot module is inlined twice.
 const lazyChunks = [
 	{file: 'settings-ui.bundle.mjs', keep: 'showOptions'},
 	{file: 'drag-drop.bundle.mjs', keep: 'register'},
@@ -96,7 +107,7 @@ for (const {file, keep} of lazyChunks) {
 	await esbuild.build({
 		stdin: {contents: text, resolveDir: distDir, loader: 'js'},
 		bundle: true,
-		external: ['./shared-bundle.mjs'],
+		external: sharedExternals,
 		format: 'esm',
 		target: 'firefox121',
 		outfile: fp,
@@ -109,13 +120,13 @@ for (const {file, keep} of lazyChunks) {
 }
 
 // The entry has no importers, so its export block is already removed.
-// Rebuild with local chunks external to remove dead test-only declarations without duplicating shared code.
+// Rebuild with the shared chunks and the lazy bundles external to remove dead test-only declarations.
 {
 	const fp = path.join(distDir, 'newtab.bundle.mjs');
 	await esbuild.build({
 		stdin: {contents: await readFile(fp, 'utf8'), resolveDir: distDir, loader: 'js'},
 		bundle: true,
-		external: ['./shared-bundle.mjs', './drag-drop.bundle.mjs', './settings-ui.bundle.mjs'],
+		external: [...sharedExternals, ...lazyExternals],
 		format: 'esm',
 		target: 'firefox121',
 		outfile: fp,
