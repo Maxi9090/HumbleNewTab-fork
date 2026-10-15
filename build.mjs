@@ -9,6 +9,27 @@ const here = import.meta.dirname;
 const srcDir = path.join(here, 'js-src');
 const distDir = path.join(here, 'js-dist');
 
+// Wrapper files must point at the bundled outputs before packaging. Already-bundled is a no-op, a file matching neither form throws
+const switchPairs = [
+	{
+		file: 'newtab.html',
+		source: `	<link rel='stylesheet' href='newtab.css'>
+	<link rel='modulepreload' href='js-src/bookmark-cache.mjs'>
+	<link rel='modulepreload' href='js-src/themes.mjs'>
+	<link rel='modulepreload' href='js-src/favicons-ui.mjs'>
+	<link rel='modulepreload' href='js-src/config-engine.mjs'>
+	<script type='module' src='js-src/newtab.mjs'></script>`,
+		bundled: `	<link rel='stylesheet' href='newtab.min.css'>
+	<link rel='modulepreload' href='js-dist/shared-bundle.mjs'>
+	<script type='module' src='js-dist/newtab.bundle.mjs'></script>`,
+	},
+	{
+		file: 'manifest.json',
+		source: '"scripts": ["js-src/background.mjs"]',
+		bundled: '"scripts": ["js-dist/background.bundle.mjs"]',
+	},
+];
+
 const distOutputs = [
 	'newtab.bundle.mjs',
 	'settings-ui.bundle.mjs',
@@ -186,3 +207,11 @@ const {code} = transform({
 	targets: {firefox: 121 << 16},
 });
 await writeFile(path.join(here, 'newtab.min.css'), code.toString().trimEnd());
+
+// Runs last, so a failed build leaves the wrapper files in source mode
+for (const {file, source, bundled} of switchPairs) {
+	const fp = path.join(here, file);
+	const text = await readFile(fp, 'utf8');
+	if (text.includes(source)) await writeFile(fp, text.replace(source, bundled));
+	else if (!text.includes(bundled)) throw new Error(`${file}: expected reference lines not found`);
+}

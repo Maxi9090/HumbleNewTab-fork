@@ -118,32 +118,7 @@ js-dist
 newtab.min.css
 ```
 
-To use the built files:
-
-`newtab.html`:
-
-```diff
- 	<meta name='color-scheme' content='dark light'>
--	<link rel='stylesheet' href='newtab.css'>
--	<link rel='modulepreload' href='js-src/bookmark-cache.mjs'>
--	<link rel='modulepreload' href='js-src/themes.mjs'>
--	<link rel='modulepreload' href='js-src/favicons-ui.mjs'>
--	<link rel='modulepreload' href='js-src/config-engine.mjs'>
--	<script type='module' src='js-src/newtab.mjs'></script>
-+	<link rel='stylesheet' href='newtab.min.css'>
-+	<link rel='modulepreload' href='js-dist/shared-bundle.mjs'>
-+	<script type='module' src='js-dist/newtab.bundle.mjs'></script>
- 	<link rel='icon' href='icons/newtab.svg'>
-```
-
-`manifest.json`:
-
-```diff
- 	"background": {
--		"scripts": ["js-src/background.mjs"],
-+		"scripts": ["js-dist/background.bundle.mjs"],
- 		"type": "module"
-```
+The build rewrites `newtab.html` and `manifest.json` to use the bundled files above.
 
 ## License explained simply
 
