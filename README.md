@@ -65,7 +65,7 @@ A Firefox-only fork of [Humble New Tab Page](https://github.com/ibillingsley/Hum
 - Import overrides settings instead of appending them.
 - Refined some of the default settings.
 - Added "Hide scrollbar" and "Remember scroll position" options.
-- Added "Restore closed windows", so closed windows get their own folder instead of mixing into "Recently closed tabs".
+- Split "Recently closed" into "Recently closed tabs" and "Recently closed windows".
 - Added zoom and image scrolling for the background image feature.
 - Icons in the layout now scale when adjusting font size.
 - Added a text outline option for better visibility over certain background images or colors.
